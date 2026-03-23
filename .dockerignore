@@ -1,0 +1,35 @@
+# Dependency and build output
+node_modules
+dist
+coverage
+
+# Environment and local config
+.env
+.env.*
+!.env.example
+
+# Tooling and editor files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs and temp files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+*.tmp
+
+# Git and docs
+.git
+.gitignore
+README.md
+
+# Test files (not needed for runtime image)
+test
+*.spec.ts
+
+# OS artifacts
+.DS_Store
