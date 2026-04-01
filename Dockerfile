@@ -12,8 +12,8 @@ COPY . .
 
 EXPOSE 3000
 
-# Generate Prisma client and run Nest in watch mode
-CMD ["sh", "-c", "npx prisma generate && npm run start:dev"]
+# Start Nest in watch mode for local development
+CMD ["npm", "run", "start:dev"]
 
 ## Builder stage compiles TypeScript into dist
 FROM node:22-alpine AS builder
@@ -37,9 +37,8 @@ ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm ci --omit=dev --no-audit --no-fund
 
-# Copy compiled app and generated Prisma client
+# Copy compiled app
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/generated ./generated
 
 # Run the app as a non-root user for better container security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

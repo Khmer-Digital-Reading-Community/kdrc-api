@@ -6,7 +6,7 @@ services:
       target: development
     container_name: kdrc-api
     restart: unless-stopped
-    command: sh -c "npx prisma generate && npm run start:dev"
+    command: npm run start:dev
     env_file:
       - .env
     environment:
@@ -42,27 +42,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 5s
-    networks:
-      - backend-net
-
-  prisma-studio:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: development
-    container_name: kdrc-prisma-studio
-    restart: unless-stopped
-    command: sh -c "npx prisma studio --port ${PRISMA_STUDIO_PORT:-5555} --browser none"
-    env_file:
-      - .env
-    ports:
-      - ${PRISMA_STUDIO_PORT:-5555}:5555
-    volumes:
-      - .:/app
-      - /app/node_modules
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
       - backend-net
 
