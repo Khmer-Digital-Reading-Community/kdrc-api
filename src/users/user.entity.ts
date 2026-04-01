@@ -1,22 +1,20 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, Entity } from 'typeorm';
+import { BaseEntity } from '../common/entities/base.entities';
 
-@Entity({ name: 'users' })
-export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+@Entity('users')
+export class User extends BaseEntity {
   @Column({ unique: true })
   email: string;
 
   @Column({ nullable: true })
   name?: string;
 
-  @Column()
-  password: string;
+  @Column({ nullable: true, select: false })
+  password?: string;
 
-  @CreateDateColumn({ name: 'createdAt' })
-  createdAt: Date;
+  @Column({ nullable: true })
+  provider?: string; 
 
-  @UpdateDateColumn({ name: 'updatedAt' })
-  updatedAt: Date;
+  @Column({ nullable: true })
+  providerId?: string;
 }
