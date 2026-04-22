@@ -15,6 +15,10 @@ import { RolesGuard } from './auth/guards/roles.guard';
   providers: [AppService,
     {
       provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
       useClass: RolesGuard,
     },
   ],

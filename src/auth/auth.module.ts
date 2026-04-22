@@ -12,7 +12,8 @@ import { GoogleStrategy } from './strategies/google.strategy';
 @Module({
   imports: [
     ConfigModule,
-    PassportModule.register({ session: false, defaultStrategy: 'jwt' }),
+    //PassportModule.register({ session: false, defaultStrategy: 'jwt' }),
+    PassportModule.register({ session: false }),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -31,4 +32,4 @@ import { GoogleStrategy } from './strategies/google.strategy';
   providers: [AuthService, JwtStrategy, GoogleStrategy],
   exports: [PassportModule, JwtModule],
 })
-export class AuthModule {}
+export class AuthModule { }

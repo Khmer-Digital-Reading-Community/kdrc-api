@@ -33,9 +33,9 @@ export class AuthController {
   @Get('test-token')
   getTestToken() {
     const token = this.jwtService.sign({
-      sub: 'test-user-iid',
+      sub: 1,
       email: 'test@gmail.com',
-      role: Role.WRITER,
+      role: Role.ADMIN,
     });
 
     return {
