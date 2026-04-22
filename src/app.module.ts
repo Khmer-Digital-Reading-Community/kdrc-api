@@ -5,10 +5,12 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { databaseConfig } from './common/config/database.config';
 import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), TypeOrmModule.forRoot(databaseConfig), AuthModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), TypeOrmModule.forRoot(databaseConfig), AuthModule,UsersModule,],
   controllers: [AppController],
   providers: [AppService],
+  
 })
 export class AppModule {}
