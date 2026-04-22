@@ -12,7 +12,7 @@ export class AuthService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async handleOAuthLogin(profile: OAuthProfile): Promise<AuthResponse> {
     if (!profile.email) {
@@ -46,6 +46,7 @@ export class AuthService {
       sub: savedUser.id,
       email: savedUser.email,
       provider: savedUser.provider,
+      role: savedUser.role,
     };
 
     const accessToken = await this.jwtService.signAsync(payload);
@@ -57,6 +58,7 @@ export class AuthService {
         email: savedUser.email,
         name: savedUser.name,
         provider: savedUser.provider,
+        role: savedUser.role,
       },
     };
   }
