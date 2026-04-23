@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -8,6 +8,8 @@ import { JwtService } from '@nestjs/jwt';
 import { Role } from './roles.enum';
 import { Roles } from './roles.decorator';
 import { RolesGuard } from './guards/roles.guard';
+import { RegisterDto } from './dto/auth-register.dto';
+import { LoginDto } from './dto/auth-login.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -48,6 +50,16 @@ export class AuthController {
   @Get('writer-only')
   testWriter() {
     return 'You are a writer';
+  }
+
+  @Post('register')
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
+  }
+
+  @Post('login')
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
   }
 
   @Get('me')

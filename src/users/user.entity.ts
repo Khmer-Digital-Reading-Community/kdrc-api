@@ -11,7 +11,7 @@ export class User extends BaseEntity {
   name?: string;
 
   @Column({ nullable: true, select: false })
-  password?: string;
+  password: string;
 
   @Column({
     type: 'enum',
