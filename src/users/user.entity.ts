@@ -9,15 +9,12 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   name?: string;
 
-  // Added for Public Profile task
   @Column({ type: 'text', nullable: true })
   bio?: string;
 
-  // Added for avatar URL
   @Column({ nullable: true })
   avatarUrl?: string;
 
-  // Added for language preference (defaults to English)
   @Column({ default: 'en' })
   languagePreference: string;
   
