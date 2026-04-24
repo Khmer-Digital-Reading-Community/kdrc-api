@@ -25,4 +25,7 @@ export class User extends BaseEntity {
 
   @Column({ nullable: true })
   providerId?: string;
+
+  @Column({ nullable: true })
+  refreshToken: string;
 }

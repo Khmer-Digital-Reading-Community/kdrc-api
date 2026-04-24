@@ -37,7 +37,7 @@ export class AuthController {
     const token = this.jwtService.sign({
       sub: 1,
       email: 'test@gmail.com',
-      role: Role.ADMIN,
+      role: Role.WRITER,
     });
 
     return {
@@ -59,7 +59,19 @@ export class AuthController {
 
   @Post('login')
   login(@Body() dto: LoginDto) {
+    console.log('LOGIN DTO:', dto);
     return this.authService.login(dto);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  logout(@Req() req: Request) {
+    return this.authService.logout(req.user?.['id']);
+  }
+
+  @Post('refresh')
+  refresh(@Body('refresh_token') refreshToken: string) {
+    return this.authService.refreshToken(refreshToken);
   }
 
   @Get('me')

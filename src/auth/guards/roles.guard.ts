@@ -25,7 +25,7 @@ export class RolesGuard implements CanActivate {
             console.log('No user in request');
             return false;
         }
-        if (user.role === Role.ADMIN) return true;
+        if (user.role === Role.WRITER) return true;
         return requiredRoles.includes(user.role);
     }
 }

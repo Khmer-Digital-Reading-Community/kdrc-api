@@ -7,7 +7,7 @@ import { OAuthProfile } from './dto/oauth-profile.dto';
 import { AuthResponse } from './dto/auth-response.dto';
 import { RegisterDto } from './dto/auth-register.dto';
 import { Role } from './roles.enum';
-import bcrypt from 'node_modules/bcryptjs';
+import * as bcrypt from 'bcryptjs';
 import { LoginDto } from './dto/auth-login.dto';
 
 @Injectable()
@@ -78,12 +78,13 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
+    console.log('HASHED:', hashedPassword);
 
     const user = this.usersRepository.create({
       name: dto.name,
       email: dto.email,
       password: hashedPassword,
-      role: Role.READER,
+      role: Role.WRITER,
     });
 
     const savedUser = await this.usersRepository.save(user);
@@ -91,24 +92,24 @@ export class AuthService {
     const { password, ...result } = savedUser;
     return result;
 
-    return savedUser;
+    //return savedUser;
   }
 
   async login(dto: LoginDto) {
-    if (!dto || !dto.email || !dto.password) {
-      throw new UnauthorizedException('Missing credentials');
-    }
-
     const user = await this.usersRepository.findOne({
       where: { email: dto.email },
+      select: ['id', 'email', 'password', 'role'],
     });
-
+    console.log('FOUND USER:', user);
+    console.log('INPUT PASSWORD:', dto.password);
+    console.log('DB PASSWORD:', user?.password);
     if (!user || !user.password) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isMatch = await bcrypt.compare(dto.password, user.password);
 
+    const isMatch = await bcrypt.compare(dto.password, user.password);
+    console.log('MATCH RESULT:', isMatch);
     if (!isMatch) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -119,9 +120,85 @@ export class AuthService {
       role: user.role,
     };
 
+    const access_token = await this.jwtService.signAsync(payload, {
+      expiresIn: '15m',
+    });
+
+    const refresh_token = await this.jwtService.signAsync(payload, {
+      expiresIn: '7d',
+    });
+
+    const hashedRt = await bcrypt.hash(refresh_token, 10);
+
+    await this.usersRepository.update(user.id, {
+      refreshToken: hashedRt,
+    });
+
     return {
-      access_token: await this.jwtService.signAsync(payload, { expiresIn: '15m' }),
-      refresh_token: await this.jwtService.signAsync(payload, { expiresIn: '7d' }),
+      access_token,
+      refresh_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
     };
+  }
+
+  async refreshToken(refreshToken: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshToken);
+
+      const user = await this.usersRepository.findOne({
+        where: { id: payload.sub },
+        select: ['id', 'email', 'role', 'refreshToken'],
+      });
+
+      if (!user || !user.refreshToken) {
+        throw new UnauthorizedException();
+      }
+
+      const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
+
+      if (!isMatch) {
+        throw new UnauthorizedException();
+      }
+
+      const newPayload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      };
+
+      const access_token = await this.jwtService.signAsync(newPayload, {
+        expiresIn: '15m',
+      });
+
+      const new_refresh_token = await this.jwtService.signAsync(newPayload, {
+        expiresIn: '7d',
+      });
+
+      const hashedRt = await bcrypt.hash(new_refresh_token, 10);
+
+      await this.usersRepository.update(user.id, {
+        refreshToken: hashedRt,
+      });
+
+      return {
+        access_token,
+        refresh_token: new_refresh_token,
+      };
+
+    } catch (e) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async logout(userId: string) {
+    await this.usersRepository.update(userId, {
+      refreshToken: null as any,
+    });
+
+    return { message: 'Logged out successfully' };
   }
 }
