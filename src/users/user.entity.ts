@@ -1,5 +1,6 @@
 import { Column, Entity } from 'typeorm';
 import { BaseEntity } from '../common/entities/base.entities';
+import { Role } from 'src/auth/roles.enum';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -23,11 +24,21 @@ export class User extends BaseEntity {
   role: string;
   
   @Column({ nullable: true, select: false })
-  password?: string;
+  password: string;
+
+  @Column({
+    type: 'enum',
+    enum: Role,
+    default: Role.READER,
+  })
+  role: Role;
 
   @Column({ nullable: true })
-  provider?: string; 
+  provider?: string;
 
   @Column({ nullable: true })
   providerId?: string;
+
+  @Column({ nullable: true })
+  refreshToken: string;
 }
