@@ -1,3 +1,5 @@
+import { Role } from "../roles.enum";
+
 export interface AuthResponse {
   accessToken: string;
   user: {
@@ -5,5 +7,6 @@ export interface AuthResponse {
     email: string;
     name?: string;
     provider?: string;
+    role: Role;
   };
 }
