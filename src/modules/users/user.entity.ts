@@ -1,24 +1,24 @@
 import { Column, Entity } from 'typeorm';
-import { BaseEntity } from '../common/entities/base.entities';
-import { Role } from 'src/auth/roles.enum';
+import { BaseEntity } from '../../common/entities/base.entities';
+import { Role } from '../auth/roles.enum';
 
 @Entity('users')
 export class User extends BaseEntity {
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column({ nullable: true })
   name?: string;
 
   @Column({ nullable: true, select: false })
-  password: string;
+  password!: string;
 
   @Column({
     type: 'enum',
     enum: Role,
     default: Role.READER,
   })
-  role: Role;
+  role!: Role;
 
   @Column({ nullable: true })
   provider?: string;
@@ -26,6 +26,6 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   providerId?: string;
 
-  @Column({ nullable: true })
-  refreshToken: string;
+  @Column({ nullable: true, select: false })
+  refreshToken?: string;
 }

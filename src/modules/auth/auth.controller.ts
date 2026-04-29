@@ -13,13 +13,13 @@ import { LoginDto } from './dto/auth-login.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService,
-    private readonly jwtService: JwtService, //Test
-  ) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  // Passport redirects to Google, so the handler stays empty
   async googleAuth() {
     return { message: 'Redirecting to Google for authentication...' };
   }
@@ -31,7 +31,6 @@ export class AuthController {
     return this.authService.handleOAuthLogin(profile);
   }
 
-  // Test token
   @Get('test-token')
   getTestToken() {
     const token = this.jwtService.sign({

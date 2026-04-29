@@ -1,4 +1,4 @@
-import { Role } from "../roles.enum";
+import { Role } from '../roles.enum';
 
 export interface AuthResponse {
   accessToken: string;

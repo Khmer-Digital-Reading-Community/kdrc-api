@@ -1,5 +1,5 @@
 import { DataSourceOptions } from 'typeorm';
-import { User } from '../../users/user.entity';
+import { User } from '../../modules/users/user.entity';
 
 const toBool = (value: string | undefined, fallback = false) => {
   if (value === undefined) {
