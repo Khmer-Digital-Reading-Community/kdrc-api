@@ -6,7 +6,7 @@ import { AuthService } from './auth.service';
 import { OAuthProfile } from './dto/oauth-profile.dto';
 import { JwtService } from '@nestjs/jwt';
 import { Role } from './roles.enum';
-import { Roles } from './roles.decorator';
+import { Roles, ROLES_KEY } from './roles.decorator';
 import { RolesGuard } from './guards/roles.guard';
 import { RegisterDto } from './dto/auth-register.dto';
 import { LoginDto } from './dto/auth-login.dto';
@@ -16,7 +16,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
@@ -49,6 +49,13 @@ export class AuthController {
   @Get('writer-only')
   testWriter() {
     return 'You are a writer';
+  }
+
+  @Get('admin-only')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  adminOnly() {
+    return 'You are admin';
   }
 
   @Post('register')

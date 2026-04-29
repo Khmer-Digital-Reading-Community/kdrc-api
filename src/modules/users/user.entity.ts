@@ -1,6 +1,7 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entities';
 import { Role } from '../auth/roles.enum';
+import { Book } from '../books/book.entity';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -16,7 +17,7 @@ export class User extends BaseEntity {
   @Column({
     type: 'enum',
     enum: Role,
-    default: Role.READER,
+    default: Role.WRITER,
   })
   role!: Role;
 
@@ -28,4 +29,7 @@ export class User extends BaseEntity {
 
   @Column({ nullable: true, select: false })
   refreshToken?: string;
+
+  @OneToMany(() => Book, (book) => book.author)
+  books!: Book[];
 }

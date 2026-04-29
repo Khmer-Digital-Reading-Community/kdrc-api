@@ -5,7 +5,7 @@ import { Role } from '../roles.enum';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private reflector: Reflector) { }
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<Role[]>(
@@ -25,7 +25,7 @@ export class RolesGuard implements CanActivate {
       console.log('No user in request');
       return false;
     }
-    if (user.role === Role.WRITER) return true;
+    if (user.role === Role.ADMIN) return true;
     return requiredRoles.includes(user.role);
   }
 }

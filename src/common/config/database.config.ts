@@ -1,5 +1,7 @@
 import { DataSourceOptions } from 'typeorm';
 import { User } from '../../modules/users/user.entity';
+import { Book } from 'src/modules/books/book.entity';
+import { Category } from 'src/modules/categories/category.entity';
 
 const toBool = (value: string | undefined, fallback = false) => {
   if (value === undefined) {
@@ -15,6 +17,6 @@ export const databaseConfig: DataSourceOptions = {
   username: process.env.POSTGRES_USER ?? 'postgres',
   password: process.env.POSTGRES_PASSWORD ?? 'postgres',
   database: process.env.POSTGRES_DB ?? 'postgres',
-  entities: [User],
+  entities: [User, Book, Category],
   synchronize: toBool(process.env.TYPEORM_SYNC, true),
 };

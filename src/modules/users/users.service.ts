@@ -2,16 +2,18 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
+import { Role } from '../auth/roles.enum';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
-  ) {}
+  ) { }
 
   findAll() {
     return this.usersRepository.find({
+      select: ['id', 'email', 'name', 'role', 'createdAt'],
       order: {
         createdAt: 'DESC',
       },
@@ -21,6 +23,7 @@ export class UsersService {
   async findOne(id: string) {
     const user = await this.usersRepository.findOne({
       where: { id },
+      select: ['id', 'email', 'name', 'role', 'createdAt'],
     });
 
     if (!user) {
@@ -78,5 +81,23 @@ export class UsersService {
       where: { id },
       select: ['id', 'email', 'role', 'refreshToken'],
     });
+  }
+
+  // ================= FOR ADMIN ===========================
+  async updateRole(userId: string, role: Role) {
+    await this.usersRepository.update(userId, { role });
+    return { message: 'User role updated' };
+  }
+  async remove(userId: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.usersRepository.delete(userId);
+    return { message: 'User deleted' };
   }
 }
