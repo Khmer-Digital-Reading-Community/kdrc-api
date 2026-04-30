@@ -6,7 +6,7 @@ import { User } from '../users/user.entity';
 import { OAuthProfile } from './dto/oauth-profile.dto';
 import { AuthResponse } from './dto/auth-response.dto';
 import { RegisterDto } from './dto/auth-register.dto';
-import { Role } from './roles.enum';
+import { Role } from '../common/enums/role.enum';
 import * as bcrypt from 'bcryptjs';
 import { LoginDto } from './dto/auth-login.dto';
 

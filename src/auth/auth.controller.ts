@@ -5,7 +5,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { OAuthProfile } from './dto/oauth-profile.dto';
 import { JwtService } from '@nestjs/jwt';
-import { Role } from './roles.enum';
+import { Role } from '../common/enums/role.enum';
 import { Roles } from './roles.decorator';
 import { RolesGuard } from './guards/roles.guard';
 import { RegisterDto } from './dto/auth-register.dto';
