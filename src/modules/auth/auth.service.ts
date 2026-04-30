@@ -1,37 +1,33 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../users/user.entity';
-import { OAuthProfile } from './dto/oauth-profile.dto';
-import { AuthResponse } from './dto/auth-response.dto';
-import { RegisterDto } from './dto/auth-register.dto';
-import { Role } from '../common/enums/role.enum';
 import * as bcrypt from 'bcryptjs';
+import { UsersService } from '../users/users.service';
+import { AuthResponse } from './dto/auth-response.dto';
 import { LoginDto } from './dto/auth-login.dto';
+import { OAuthProfile } from './dto/oauth-profile.dto';
+import { RegisterDto } from './dto/auth-register.dto';
+import { Role } from '../../common/enums/role.enum';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User)
-    private readonly usersRepository: Repository<User>,
+    private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
 
   async handleOAuthLogin(profile: OAuthProfile): Promise<AuthResponse> {
     if (!profile.email) {
       throw new UnauthorizedException('Unable to determine email from provider response.');
     }
 
-    let user = await this.usersRepository.findOne({
-      where: [
-        { provider: profile.provider, providerId: profile.providerId },
-        { email: profile.email },
-      ],
-    });
+    let user = await this.usersService.findByProviderOrEmail(
+      profile.provider,
+      profile.providerId,
+      profile.email,
+    );
 
     if (!user) {
-      user = this.usersRepository.create({
+      user = await this.usersService.create({
         email: profile.email,
         name: profile.name,
         provider: profile.provider,
@@ -43,15 +39,15 @@ export class AuthService {
       if (profile.name && !user.name) {
         user.name = profile.name;
       }
+
+      user = await this.usersService.save(user);
     }
 
-    const savedUser = await this.usersRepository.save(user);
-
     const payload = {
-      sub: savedUser.id,
-      email: savedUser.email,
-      provider: savedUser.provider,
-      role: savedUser.role,
+      sub: user.id,
+      email: user.email,
+      provider: user.provider,
+      role: user.role,
     };
 
     const accessToken = await this.jwtService.signAsync(payload);
@@ -59,19 +55,17 @@ export class AuthService {
     return {
       accessToken,
       user: {
-        id: savedUser.id,
-        email: savedUser.email,
-        name: savedUser.name,
-        provider: savedUser.provider,
-        role: savedUser.role,
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        provider: user.provider,
+        role: user.role,
       },
     };
   }
 
   async register(dto: RegisterDto) {
-    const existing = await this.usersRepository.findOne({
-      where: { email: dto.email },
-    });
+    const existing = await this.usersService.findByEmail(dto.email);
 
     if (existing) {
       throw new BadRequestException('Email already exists');
@@ -80,33 +74,25 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     console.log('HASHED:', hashedPassword);
 
-    const user = this.usersRepository.create({
+    const savedUser = await this.usersService.create({
       name: dto.name,
       email: dto.email,
       password: hashedPassword,
       role: Role.WRITER,
     });
 
-    const savedUser = await this.usersRepository.save(user);
-
     const { password, ...result } = savedUser;
     return result;
-
-    //return savedUser;
   }
 
   async login(dto: LoginDto) {
-    const user = await this.usersRepository.findOne({
-      where: { email: dto.email },
-      select: ['id', 'email', 'password', 'role'],
-    });
+    const user = await this.usersService.findByEmailWithPassword(dto.email);
     console.log('FOUND USER:', user);
     console.log('INPUT PASSWORD:', dto.password);
     console.log('DB PASSWORD:', user?.password);
     if (!user || !user.password) {
       throw new UnauthorizedException('Invalid credentials');
     }
-
 
     const isMatch = await bcrypt.compare(dto.password, user.password);
     console.log('MATCH RESULT:', isMatch);
@@ -130,9 +116,7 @@ export class AuthService {
 
     const hashedRt = await bcrypt.hash(refresh_token, 10);
 
-    await this.usersRepository.update(user.id, {
-      refreshToken: hashedRt,
-    });
+    await this.usersService.storeRefreshToken(user.id, hashedRt);
 
     return {
       access_token,
@@ -149,10 +133,7 @@ export class AuthService {
     try {
       const payload = await this.jwtService.verifyAsync(refreshToken);
 
-      const user = await this.usersRepository.findOne({
-        where: { id: payload.sub },
-        select: ['id', 'email', 'role', 'refreshToken'],
-      });
+      const user = await this.usersService.findOneWithRefreshToken(payload.sub);
 
       if (!user || !user.refreshToken) {
         throw new UnauthorizedException();
@@ -180,24 +161,19 @@ export class AuthService {
 
       const hashedRt = await bcrypt.hash(new_refresh_token, 10);
 
-      await this.usersRepository.update(user.id, {
-        refreshToken: hashedRt,
-      });
+      await this.usersService.storeRefreshToken(user.id, hashedRt);
 
       return {
         access_token,
         refresh_token: new_refresh_token,
       };
-
     } catch (e) {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
 
   async logout(userId: string) {
-    await this.usersRepository.update(userId, {
-      refreshToken: null as any,
-    });
+    await this.usersService.clearRefreshToken(userId);
 
     return { message: 'Logged out successfully' };
   }

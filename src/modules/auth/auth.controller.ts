@@ -5,21 +5,21 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { OAuthProfile } from './dto/oauth-profile.dto';
 import { JwtService } from '@nestjs/jwt';
-import { Role } from '../common/enums/role.enum';
-import { Roles } from './roles.decorator';
+import { Role } from '../../common/enums/role.enum';
+import { Roles, ROLES_KEY } from './roles.decorator';
 import { RolesGuard } from './guards/roles.guard';
 import { RegisterDto } from './dto/auth-register.dto';
 import { LoginDto } from './dto/auth-login.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService,
-    private readonly jwtService: JwtService, //Test
+  constructor(
+    private readonly authService: AuthService,
+    private readonly jwtService: JwtService,
   ) { }
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  // Passport redirects to Google, so the handler stays empty
   async googleAuth() {
     return { message: 'Redirecting to Google for authentication...' };
   }
@@ -31,7 +31,6 @@ export class AuthController {
     return this.authService.handleOAuthLogin(profile);
   }
 
-  // Test token
   @Get('test-token')
   getTestToken() {
     const token = this.jwtService.sign({
@@ -50,6 +49,13 @@ export class AuthController {
   @Get('writer-only')
   testWriter() {
     return 'You are a writer';
+  }
+
+  @Get('admin-only')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  adminOnly() {
+    return 'You are admin';
   }
 
   @Post('register')
