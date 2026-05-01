@@ -4,7 +4,7 @@ import { In, Repository } from 'typeorm';
 import { Book } from './book.entity';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
-import { Role } from '../auth/roles.enum';
+import { Role } from 'src/common/enums/role.enum';
 import { Category } from '../categories/category.entity';
 
 const MAX_FREE_BOOKS = 5;

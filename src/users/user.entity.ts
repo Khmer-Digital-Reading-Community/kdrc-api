@@ -20,8 +20,8 @@ export class User extends BaseEntity {
   languagePreference: string;
   
   // Added for Manage User Roles task (Defaults to 'reader')
-  @Column({ default: 'reader' }) 
-  role: string;
+  // @Column({ default: 'reader' }) 
+  // role: string;
   
   @Column({ nullable: true, select: false })
   password: string;
