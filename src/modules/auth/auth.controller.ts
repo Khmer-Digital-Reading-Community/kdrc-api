@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { OAuthProfile } from './dto/oauth-profile.dto';
@@ -16,6 +17,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) { }
 
   @Get('google')
@@ -26,9 +28,14 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  async googleCallback(@Req() req: Request) {
+  async googleCallback(@Req() req: Request, @Res() res: Response) {
     const profile = req.user as OAuthProfile;
-    return this.authService.handleOAuthLogin(profile);
+    const { accessToken } = await this.authService.handleOAuthLogin(profile);
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const callbackUrl = new URL('/auth/callback', frontendUrl);
+    callbackUrl.searchParams.set('accessToken', accessToken);
+
+    return res.redirect(callbackUrl.toString());
   }
 
   @Get('test-token')
