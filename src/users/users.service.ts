@@ -17,17 +17,16 @@ export class UsersService {
     return user;
   }
 
-  // Used for Public Profile (Excludes private fields)
+  
   async getPublicProfile(id: string) {
     const user = await this.userRepository.findOne({
       where: { id },
-      // Explicitly select only public fields
+      // select only public fields
       select: ['id', 'name', 'bio', 'avatarUrl'], 
     });
 
     if (!user) throw new NotFoundException('User not found');
 
-    // Placeholders for modules not yet built
     return { 
       ...user, 
       followerCount: 0, 

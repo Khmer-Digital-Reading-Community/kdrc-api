@@ -8,15 +8,23 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { BooksModule } from './modules/books/books.module';
 import { CategoriesModule } from './modules/categories/categories.module';
-
+import { BookmarksModule } from './modules/bookmarks/bookmarks.module';
+import { Bookmark } from './modules/bookmarks/bookmark.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    TypeOrmModule.forRoot(databaseConfig),
+    // TypeOrmModule.forRoot(databaseConfig),
+    // TypeOrmModule.forFeature([Bookmark]),
+    TypeOrmModule.forRoot({
+      ...databaseConfig, 
+      entities: [...(databaseConfig.entities as any[]), Bookmark], 
+    }),
+
     AuthModule,
     UsersModule,
     BooksModule,
     CategoriesModule,
+    BookmarksModule,
   ],
   controllers: [AppController],
   providers: [AppService],
