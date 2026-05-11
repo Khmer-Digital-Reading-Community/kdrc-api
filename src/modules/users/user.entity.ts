@@ -2,6 +2,7 @@ import { Column, Entity, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entities';
 import { Role } from 'src/common/enums/role.enum';
 import { Book } from '../books/book.entity';
+import { Notification } from '../notifications/notification.entity';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -32,4 +33,7 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Book, (book) => book.author)
   books!: Book[];
+
+  @OneToMany(() => Notification, (notification) => notification.recipient)
+  notifications!: Notification[];
 }

@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Category } from '../categories/category.entity';
+import { BookStatus } from 'src/common/enums/book-status.enum';
 
 @Entity()
 export class Book {
@@ -12,6 +13,13 @@ export class Book {
 
     @Column('text')
     content!: string;
+
+    @Column({
+        type: 'enum',
+        enum: BookStatus,
+        default: BookStatus.DRAFT,
+    })
+    status!: BookStatus;
 
     @ManyToOne(() => User, (user) => user.books, {
         onDelete: 'CASCADE',
