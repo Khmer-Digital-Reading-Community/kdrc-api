@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Category } from '../categories/category.entity';
 import { BookStatus } from 'src/common/enums/book-status.enum';
+import { Review } from '../reviews/review.entity';
 
 @Entity()
 export class Book {
@@ -25,6 +26,9 @@ export class Book {
         onDelete: 'CASCADE',
     })
     author!: User;
+
+    @OneToMany(() => Review, (review) => review.book)
+    reviews!: Review[];
 
     @CreateDateColumn()
     createdAt!: Date;
