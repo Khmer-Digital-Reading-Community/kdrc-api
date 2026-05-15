@@ -4,6 +4,10 @@ import { Book } from 'src/modules/books/book.entity';
 import { Category } from 'src/modules/categories/category.entity';
 import { Notification } from 'src/modules/notifications/notification.entity';
 import { Review } from 'src/modules/reviews/review.entity';
+import { Bookmark } from 'src/modules/bookmarks/bookmark.entity';
+import { Chapter } from 'src/modules/chapters/entities/chapter.entity';
+import { Comment } from 'src/modules/interactions/comments/entities/comment.entity';
+import { ChapterType } from '../enums';
 
 const toBool = (value: string | undefined, fallback = false) => {
   if (value === undefined) {
@@ -19,7 +23,7 @@ export const databaseConfig: DataSourceOptions = {
   username: process.env.POSTGRES_USER ?? 'postgres',
   password: process.env.POSTGRES_PASSWORD ?? 'postgres',
   database: process.env.POSTGRES_DB ?? 'postgres',
-  entities: [User, Book, Category, Notification, Review],
+  entities: [User, Book, Category, Notification, Review, Bookmark, Chapter, Comment],
   synchronize: toBool(process.env.TYPEORM_SYNC, true),
   migrations: ['dist/migrations/*.js'],
   migrationsRun: toBool(process.env.TYPEORM_MIGRATIONS_RUN, false),

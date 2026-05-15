@@ -1,4 +1,5 @@
 import { User } from 'src/modules/users/user.entity';
+import { Chapter } from '../../../chapters/entities/chapter.entity';
 import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('comments')
