@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Category } from '../categories/category.entity';
 import { BookStatus } from 'src/common/enums/book-status.enum';
+import { Chapter } from '../chapters/chapter.entity';
 
 @Entity()
 export class Book {
@@ -37,4 +38,7 @@ export class Book {
     })
     @JoinTable()
     categories!: Category[];
+
+    @OneToMany(() => Chapter, (chapter) => chapter.book)
+    chapters!: Chapter[];
 }

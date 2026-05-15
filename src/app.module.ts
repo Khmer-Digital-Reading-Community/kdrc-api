@@ -9,6 +9,7 @@ import { UsersModule } from './modules/users/users.module';
 import { BooksModule } from './modules/books/books.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ChaptersModule } from './modules/chapters/chapters.module';
 
 @Module({
   imports: [
@@ -19,9 +20,9 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     BooksModule,
     CategoriesModule,
     NotificationsModule,
+    ChaptersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
-  
 })
-export class AppModule { }
+export class AppModule {}
