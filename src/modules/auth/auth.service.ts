@@ -119,8 +119,8 @@ export class AuthService {
     await this.usersService.storeRefreshToken(user.id, hashedRt);
 
     return {
-      access_token,
-      refresh_token,
+      accessToken: access_token,
+      refreshToken: refresh_token,
       user: {
         id: user.id,
         email: user.email,
