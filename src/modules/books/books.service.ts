@@ -6,6 +6,10 @@ import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { Role } from 'src/common/enums/role.enum';
 import { Category } from '../categories/category.entity';
+import { User } from '../users/user.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import { BookStatus } from 'src/common/enums/book-status.enum';
+import { NotificationType } from '../notifications/notification.entity';
 
 const MAX_FREE_BOOKS = 5;
 
@@ -17,6 +21,11 @@ export class BooksService {
 
         @InjectRepository(Category)
         private categoryRepo: Repository<Category>,
+
+        @InjectRepository(User)
+        private usersRepo: Repository<User>,
+
+        private notificationsService: NotificationsService,
     ) { }
 
     findAll() {
@@ -52,9 +61,20 @@ export class BooksService {
             ...dto,
             author: { id: user.id },
             categories,
+            status: BookStatus.DRAFT,
         });
 
-        return this.repo.save(book);
+        const savedBook = await this.repo.save(book);
+
+        // Notify author about book creation
+        await this.notificationsService.create({
+            title: 'Book Created',
+            message: `Your book "${savedBook.title}" has been created successfully!`,
+            type: NotificationType.SUCCESS,
+            recipientId: user.id,
+        });
+
+        return savedBook;
     }
 
     async update(id: string, dto: UpdateBookDto, user: any) {
@@ -74,8 +94,16 @@ export class BooksService {
             throw new ForbiddenException('You cannot update this book');
         }
 
+        const oldStatus = book.status;
         Object.assign(book, dto);
-        return this.repo.save(book);
+        const updatedBook = await this.repo.save(book);
+
+        // If book status changed to PUBLISHED, notify all users
+        if (oldStatus !== BookStatus.PUBLISHED && updatedBook.status === BookStatus.PUBLISHED) {
+            await this.notifyAllUsersAboutBookAvailable(updatedBook);
+        }
+
+        return updatedBook;
     }
 
     async remove(id: string, user: any) {
@@ -97,5 +125,22 @@ export class BooksService {
 
         await this.repo.remove(book);
         return { message: 'Book deleted' };
+    }
+
+    private async notifyAllUsersAboutBookAvailable(book: Book) {
+        const users = await this.usersRepo.find();
+
+        for (const user of users) {
+            try {
+                await this.notificationsService.create({
+                    title: 'Book Available',
+                    message: `New book "${book.title}" by ${book.author?.name || 'Unknown'} is now available!`,
+                    type: NotificationType.INFO,
+                    recipientId: user.id,
+                });
+            } catch (error) {
+                console.error(`Failed to notify user ${user.id}:`, error);
+            }
+        }
     }
 }
