@@ -11,6 +11,8 @@ import {
 } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Category } from '../categories/category.entity';
+import { BookStatus } from 'src/common/enums/book-status.enum';
+import { Review } from '../reviews/review.entity';
 import { Chapter } from '../chapters/entities/chapter.entity';
 
 @Entity()
@@ -24,13 +26,23 @@ export class Book {
   @Column('text')
   content!: string;
 
-  @ManyToOne(() => User, (user) => user.books, {
-    onDelete: 'CASCADE',
-  })
-  author!: User;
+    @Column({
+        type: 'enum',
+        enum: BookStatus,
+        default: BookStatus.DRAFT,
+    })
+    status!: BookStatus;
 
-  @CreateDateColumn()
-  createdAt!: Date;
+    @ManyToOne(() => User, (user) => user.books, {
+        onDelete: 'CASCADE',
+    })
+    author!: User;
+
+    @OneToMany(() => Review, (review) => review.book)
+    reviews!: Review[];
+
+    @CreateDateColumn()
+    createdAt!: Date;
 
   @UpdateDateColumn()
   updatedAt!: Date;
