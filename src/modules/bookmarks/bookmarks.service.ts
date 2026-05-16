@@ -1,7 +1,7 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Bookmark } from './bookmark.entity';
+import { Bookmark, BookmarkType } from './bookmark.entity';
 
 @Injectable()
 export class BookmarksService {
@@ -10,43 +10,61 @@ export class BookmarksService {
     private readonly bookmarkRepo: Repository<Bookmark>,
   ) {}
 
-async addFavorite(userId: string, bookId: string) {
+  async addBookmark(userId: string, type: BookmarkType, targetId: string) {
+    // 1. Validate inputs based on incoming structural type
+    const saveData: Partial<Bookmark> = { userId, type };
+
+    if (type === BookmarkType.BOOK) {
+      saveData.bookId = targetId;
+      saveData.chapterId = undefined; // Force explicit empty state
+    } else if (type === BookmarkType.CHAPTER) {
+      saveData.chapterId = targetId;
+      saveData.bookId = undefined;
+    } else {
+      throw new BadRequestException('Invalid bookmark type. Must be BOOK or CHAPTER.');
+    }
+
     try {
-      const bookmark = this.bookmarkRepo.create({ userId, bookId });
+      // 2. Fire save execution straight to PostgreSQL
+      const bookmark = this.bookmarkRepo.create(saveData);
       return await this.bookmarkRepo.save(bookmark);
-    } catch (error) {
-      // 1. THIS IS OUR DETECTIVE: It will print the real error in your ThinkPad terminal
-      console.error('--- DATABASE ERROR DETECTED ---');
-      console.error('Code:', error.code);
-      console.error('Detail:', error.detail);
-
-      // 2. Duplicate Bookmark (Unique Violation)
+    } catch (error: any) {
+      // 3. PostgreSQL unique violation error handler (Code: 23505)
       if (error.code === '23505') {
-        throw new ConflictException('This book is already in your favorites.');
+        throw new ConflictException(`This ${type.toLowerCase()} is already bookmarked.`);
       }
-      
-      // 3. Book doesn't exist (Foreign Key Violation)
+      // Foreign key violation if target object doesn't exist (Code: 23503)
       if (error.code === '23503') {
-        throw new NotFoundException('The book you are trying to bookmark does not exist in the database.');
+        throw new NotFoundException(`The target ${type.toLowerCase()} item does not exist.`);
       }
-
       throw error;
     }
   }
 
-  async getMyFavorites(userId: string) {
+  async getMyBookmarks(userId: string) {
     return await this.bookmarkRepo.find({
       where: { userId },
-      relations: ['book'], // This allows the frontend to see book titles/details
+      relations: ['book', 'chapter'], // Automatically hooks up loaded entity relations
       order: { createdAt: 'DESC' },
     });
   }
 
-  async removeFavorite(userId: string, bookId: string) {
-    const result = await this.bookmarkRepo.delete({ userId, bookId });
-    if (result.affected === 0) {
-      throw new NotFoundException('Bookmark not found in your favorites.');
+  async removeBookmark(userId: string, type: BookmarkType, targetId: string) {
+    const lookupCriteria: Record<string, any> = { userId, type };
+
+    if (type === BookmarkType.BOOK) {
+      lookupCriteria.bookId = targetId;
+    } else {
+      lookupCriteria.chapterId = targetId;
     }
-    return { message: 'Successfully removed from favorites.' };
+
+    // Direct database wipe command (Highly performant block query!)
+    const result = await this.bookmarkRepo.delete(lookupCriteria);
+    
+    if (result.affected === 0) {
+      throw new NotFoundException('Bookmark not found in your collection.');
+    }
+
+    return { message: `Successfully removed ${type.toLowerCase()} from bookmarks.` };
   }
 }
