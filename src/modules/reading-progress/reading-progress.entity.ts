@@ -2,7 +2,7 @@ import { Entity, Column, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entities';
 import { User } from '../users/user.entity';
 import { Book } from '../books/book.entity';
-import { Chapter } from '../books/chapter.entity';
+import { Chapter } from '../chapters/entities/chapter.entity';
 
 @Entity('reading_progress')
 @Unique(['user', 'book'])
