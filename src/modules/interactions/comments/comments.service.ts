@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm/browser/repository/Repository.js';
+import { Repository } from 'typeorm';
 import { Comment } from './entities/comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
@@ -24,6 +24,22 @@ export class CommentsService {
       book: { id: createCommentDto.bookId }, // Link to the book
     });
     return await this.commentsRepository.save(comment);
+  }
+
+  async findByBookAndPage(bookId: string, pageNumber: number) {
+    return await this.commentsRepository.find({
+      where: {
+        book: { id: bookId },
+        pageNumber,
+      },
+      relations: {
+        user: true,
+        book: true,
+      },
+      order: {
+        createdAt: 'ASC',
+      },
+    });
   }
 
   async update(
