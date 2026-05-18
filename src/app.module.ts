@@ -28,6 +28,7 @@ import { CommentsModule } from './modules/interactions/comments/comments.module'
     ChaptersModule,
     BookmarksModule,
     CommentsModule,
+    Bookmark,
   ],
   controllers: [AppController],
   providers: [AppService],

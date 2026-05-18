@@ -21,7 +21,7 @@ export class CommentsService {
       content: createCommentDto.content,
       pageNumber: createCommentDto.pageNumber,
       user: { id: userId }, // Link to the user who made the comment
-      book: { id: createCommentDto.bookId }, // Link to the book
+      chapter: { id: createCommentDto.bookId }, // Link to the chapter
     });
     return await this.commentsRepository.save(comment);
   }
@@ -29,12 +29,12 @@ export class CommentsService {
   async findByBookAndPage(bookId: string, pageNumber: number) {
     return await this.commentsRepository.find({
       where: {
-        book: { id: bookId },
+        chapter: { id: bookId },
         pageNumber,
       },
       relations: {
         user: true,
-        book: true,
+        chapter: true,
       },
       order: {
         createdAt: 'ASC',

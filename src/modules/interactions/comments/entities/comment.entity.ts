@@ -25,7 +25,7 @@ export class Comment {
   user!: User;
 
   @ManyToOne(() => Chapter, { onDelete: 'CASCADE' })
-  book!: Chapter;
+  chapter!: Chapter;
 
   @CreateDateColumn()
   createdAt!: Date;
