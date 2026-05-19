@@ -8,8 +8,11 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { User } from '../users/user.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Book, Category, User]), NotificationsModule],
-    controllers: [BooksController],
-    providers: [BooksService],
+  imports: [
+    TypeOrmModule.forFeature([Book, Category, User]),
+    NotificationsModule,
+  ],
+  controllers: [BooksController],
+  providers: [BooksService],
 })
-export class BooksModule { }
+export class BooksModule {}
