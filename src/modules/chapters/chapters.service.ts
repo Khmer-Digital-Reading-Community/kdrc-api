@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Chapter } from './chapter.entity';
 import { Book } from '../books/book.entity';
-import { CreateChapterDto, UpdateChapterDto, ChapterResponseDto } from './dto';
+import { CreateChapterDto, UpdateChapterDto, ChapterResponseDto, ChapterContentDto } from './dto';
 
 @Injectable()
 export class ChaptersService {
@@ -158,6 +158,92 @@ export class ChaptersService {
       description: chapter.description,
       createdAt: chapter.createdAt,
       updatedAt: chapter.updatedAt,
+    };
+  }
+
+  /**
+   * Get full content for a single chapter
+   * Validates chapter ID, loads content, and calculates metadata
+   *
+   * @param chapterId - UUID of the chapter
+   * @returns Full chapter content with metadata (word count, reading time)
+   * @throws NotFoundException if chapter doesn't exist
+   * @throws BadRequestException if chapter ID is invalid
+   */
+  async getChapterContent(chapterId: string): Promise<ChapterContentDto> {
+    // Validate chapter ID format
+    if (!chapterId || typeof chapterId !== 'string' || chapterId.trim() === '') {
+      throw new BadRequestException('Invalid chapter ID format');
+    }
+
+    // Query for chapter - will be null if not found
+    const chapter = await this.chaptersRepo.findOne({
+      where: { id: chapterId },
+      relations: ['book'],
+    });
+
+    // Handle chapter not found
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with ID ${chapterId} not found`);
+    }
+
+    // Calculate word count from content
+    const wordCount = this.calculateWordCount(chapter.content);
+
+    // Calculate reading time (average reading speed: 200-250 words per minute)
+    const readingTimeMinutes = Math.ceil(wordCount / 225);
+
+    // Format and return chapter content
+    return this.mapToContentDto(chapter, wordCount, readingTimeMinutes);
+  }
+
+  /**
+   * Calculate word count from content text
+   * Handles various text formats and edge cases
+   *
+   * @param content - The content text to analyze
+   * @returns Total number of words
+   */
+  private calculateWordCount(content: string): number {
+    if (!content) {
+      return 0;
+    }
+
+    // Split by whitespace and filter out empty strings
+    const words = content
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0);
+
+    return words.length;
+  }
+
+  /**
+   * Map Chapter entity to content DTO with metadata
+   *
+   * @param chapter - The chapter entity
+   * @param wordCount - Calculated word count
+   * @param readingTimeMinutes - Calculated reading time
+   * @returns Formatted chapter content DTO
+   */
+  private mapToContentDto(
+    chapter: Chapter,
+    wordCount: number,
+    readingTimeMinutes: number,
+  ): ChapterContentDto {
+    return {
+      id: chapter.id,
+      title: chapter.title,
+      content: chapter.content,
+      chapterNumber: chapter.chapterNumber,
+      order: chapter.order,
+      type: chapter.type,
+      description: chapter.description,
+      bookId: chapter.bookId,
+      createdAt: chapter.createdAt,
+      updatedAt: chapter.updatedAt,
+      wordCount,
+      readingTimeMinutes,
     };
   }
 }

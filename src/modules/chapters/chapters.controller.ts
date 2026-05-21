@@ -8,9 +8,11 @@ import {
   Body,
   UseGuards,
   Req,
+  UseInterceptors,
 } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { ChaptersService } from './chapters.service';
-import { CreateChapterDto, UpdateChapterDto, ChapterResponseDto } from './dto';
+import { CreateChapterDto, UpdateChapterDto, ChapterResponseDto, ChapterContentDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 /**
@@ -19,6 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
  *
  * @remarks
  * GET /chapters/book/:bookId - Fetch all chapters for a book
+ * GET /chapters/:id/content - Fetch full content for a single chapter (cached)
  * POST /chapters - Create a new chapter
  * PATCH /chapters/:id - Update a chapter
  * DELETE /chapters/:id - Delete a chapter
@@ -54,6 +57,42 @@ export class ChaptersController {
     @Param('bookId') bookId: string,
   ): Promise<ChapterResponseDto[]> {
     return this.chaptersService.getChaptersByBookId(bookId);
+  }
+
+  /**
+   * Get full content for a single chapter
+   * Includes formatted content, word count, and reading time estimate
+   * Response is cached for 1 hour (3600 seconds) to optimize content loading
+   *
+   * @param id - The UUID of the chapter
+   * @returns Full chapter content with metadata
+   *
+   * @example
+   * GET /chapters/chapter-uuid/content
+   * Response: {
+   *   "id": "chapter-uuid",
+   *   "title": "Chapter 1: Introduction",
+   *   "content": "Full chapter text here...",
+   *   "chapterNumber": 1,
+   *   "wordCount": 2500,
+   *   "readingTimeMinutes": 11,
+   *   "bookId": "book-uuid",
+   *   "type": "CHAPTER",
+   *   "order": 0,
+   *   "createdAt": "2024-01-15T10:30:00Z",
+   *   "updatedAt": "2024-01-15T10:30:00Z"
+   * }
+   *
+   * @throws NotFoundException if chapter doesn't exist
+   * @throws BadRequestException if chapter ID format is invalid
+   */
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(3600) // Cache for 1 hour
+  @Get(':id/content')
+  async getChapterContent(
+    @Param('id') id: string,
+  ): Promise<ChapterContentDto> {
+    return this.chaptersService.getChapterContent(id);
   }
 
   /**
