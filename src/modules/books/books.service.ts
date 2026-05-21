@@ -58,7 +58,8 @@ export class BooksService {
         }
 
         const book = this.repo.create({
-            ...dto,
+            title: dto.title,
+            content: dto.content,
             author: { id: user.id },
             categories,
             status: BookStatus.DRAFT,

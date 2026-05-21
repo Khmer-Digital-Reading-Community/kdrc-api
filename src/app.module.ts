@@ -23,6 +23,7 @@ import { Bookmark } from './modules/bookmarks/bookmark.entity';
     BooksModule,
     CategoriesModule,
     NotificationsModule,
+    ChaptersModule,
     ReviewsModule,
     ChaptersModule,
     BookmarksModule,
