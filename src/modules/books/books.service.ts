@@ -128,6 +128,52 @@ export class BooksService {
         return { message: 'Book deleted' };
     }
 
+    async search(q: string, page = 1, limit = 10) {
+        if (!q || !q.trim()) {
+            return [];
+        }
+
+        const skip = (page - 1) * limit;
+
+        const query = this.repo
+            .createQueryBuilder('book')
+            .leftJoinAndSelect('book.author', 'author')
+            .addSelect(`
+        ts_rank(
+            to_tsvector(
+            'english',
+            coalesce(book.title, '') || ' ' ||
+            coalesce(book.content, '') || ' ' ||
+            coalesce(author.name, '')
+            ),
+            plainto_tsquery('english', :query)
+        )
+        `, 'rank')
+            .where(`
+        to_tsvector(
+            'english',
+            coalesce(book.title, '') || ' ' ||
+            coalesce(book.content, '') || ' ' ||
+            coalesce(author.name, '')
+        )
+        @@ plainto_tsquery('english', :query)
+        `, {
+                query: q,
+            })
+            .orderBy('rank', 'DESC')
+            .skip(skip)
+            .take(limit);
+
+        const [data, total] = await query.getManyAndCount();
+
+        return {
+            data,
+            total,
+            page,
+            limit,
+        };
+    }
+
     private async notifyAllUsersAboutBookAvailable(book: Book) {
         const users = await this.usersRepo.find();
 
