@@ -1,4 +1,5 @@
 import { ChapterType } from 'src/common/enums/chapter-type.enum';
+import { ChapterStatus } from 'src/common/enums/chapter-status.enum';
 
 /**
  * DTO for retrieving full chapter content
@@ -11,6 +12,7 @@ export class ChapterContentDto {
   chapterNumber!: number;
   order!: number;
   type!: ChapterType;
+  status!: ChapterStatus;
   description?: string;
   bookId!: string;
   createdAt!: Date;

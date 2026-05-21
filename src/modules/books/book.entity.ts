@@ -26,23 +26,38 @@ export class Book {
   @Column('text')
   content!: string;
 
-    @Column({
-        type: 'enum',
-        enum: BookStatus,
-        default: BookStatus.DRAFT,
-    })
-    status!: BookStatus;
+  @Column({ nullable: true })
+  coverImageUrl?: string;
 
-    @ManyToOne(() => User, (user) => user.books, {
-        onDelete: 'CASCADE',
-    })
-    author!: User;
+  @Column({
+    type: 'enum',
+    enum: BookStatus,
+    default: BookStatus.DRAFT,
+  })
+  status!: BookStatus;
 
-    @OneToMany(() => Review, (review) => review.book)
-    reviews!: Review[];
+  @Column({ nullable: true })
+  language?: string;
 
-    @CreateDateColumn()
-    createdAt!: Date;
+  @Column({ nullable: true })
+  genre?: string;
+
+  @Column({ nullable: true, type: 'int' })
+  pageCount?: number;
+
+  @Column({ nullable: true })
+  publisher?: string;
+
+  @ManyToOne(() => User, (user) => user.books, {
+    onDelete: 'CASCADE',
+  })
+  author!: User;
+
+  @OneToMany(() => Review, (review) => review.book)
+  reviews!: Review[];
+
+  @CreateDateColumn()
+  createdAt!: Date;
 
   @UpdateDateColumn()
   updatedAt!: Date;

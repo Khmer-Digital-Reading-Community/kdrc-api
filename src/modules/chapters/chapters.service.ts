@@ -2,12 +2,17 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Chapter } from './chapter.entity';
+import { Chapter } from './entities/chapter.entity';
 import { Book } from '../books/book.entity';
-import { CreateChapterDto, UpdateChapterDto, ChapterResponseDto, ChapterContentDto } from './dto';
+import { CreateChapterDto } from './dto/create-chapter.dto';
+import { UpdateChapterDto } from './dto/update-chapter.dto';
+import { ChapterContentDto } from './dto/chapter-content.dto';
+import { ChapterResponseDto } from './dto/chapter-response.dto';
+import { Role } from 'src/common/enums/role.enum';
 
 @Injectable()
 export class ChaptersService {
@@ -58,14 +63,20 @@ export class ChaptersService {
   /**
    * Create a new chapter for a book
    */
-  async create(dto: CreateChapterDto): Promise<ChapterResponseDto> {
+  async create(dto: CreateChapterDto, user: any): Promise<ChapterResponseDto> {
     // Validate book exists
     const book = await this.booksRepo.findOne({
       where: { id: dto.bookId },
+      relations: ['author'],
     });
 
     if (!book) {
       throw new NotFoundException(`Book with ID ${dto.bookId} not found`);
+    }
+
+    // Verify ownership
+    if (book.author.id !== user.id && user.role !== Role.ADMIN) {
+      throw new ForbiddenException('You cannot add chapters to this book');
     }
 
     // Check for duplicate chapter number in the same book
@@ -91,20 +102,27 @@ export class ChaptersService {
   /**
    * Update an existing chapter
    */
-  async update(id: string, dto: UpdateChapterDto): Promise<ChapterResponseDto> {
+  async update(
+    id: string,
+    dto: UpdateChapterDto,
+    user: any,
+  ): Promise<ChapterResponseDto> {
     const chapter = await this.chaptersRepo.findOne({
       where: { id },
+      relations: ['book', 'book.author'],
     });
 
     if (!chapter) {
       throw new NotFoundException(`Chapter with ID ${id} not found`);
     }
 
+    // Verify ownership
+    if (chapter.book.author.id !== user.id && user.role !== Role.ADMIN) {
+      throw new ForbiddenException('You cannot update this chapter');
+    }
+
     // If updating chapter number, check for duplicates in the same book
-    if (
-      dto.chapterNumber &&
-      dto.chapterNumber !== chapter.chapterNumber
-    ) {
+    if (dto.chapterNumber && dto.chapterNumber !== chapter.chapterNumber) {
       const existingChapter = await this.chaptersRepo.findOne({
         where: {
           bookId: chapter.bookId,
@@ -128,13 +146,22 @@ export class ChaptersService {
   /**
    * Delete a chapter
    */
-  async delete(id: string): Promise<{ success: boolean; message: string }> {
+  async delete(
+    id: string,
+    user: any,
+  ): Promise<{ success: boolean; message: string }> {
     const chapter = await this.chaptersRepo.findOne({
       where: { id },
+      relations: ['book', 'book.author'],
     });
 
     if (!chapter) {
       throw new NotFoundException(`Chapter with ID ${id} not found`);
+    }
+
+    // Verify ownership
+    if (chapter.book.author.id !== user.id && user.role !== Role.ADMIN) {
+      throw new ForbiddenException('You cannot delete this chapter');
     }
 
     await this.chaptersRepo.remove(chapter);
@@ -149,13 +176,17 @@ export class ChaptersService {
    * Map Chapter entity to response DTO
    */
   private mapToResponseDto(chapter: Chapter): ChapterResponseDto {
+    const wordCount = this.calculateWordCount(chapter.content || '');
+
     return {
       id: chapter.id,
       title: chapter.title,
       chapterNumber: chapter.chapterNumber,
       order: chapter.order,
       type: chapter.type,
+      status: chapter.status,
       description: chapter.description,
+      wordCount,
       createdAt: chapter.createdAt,
       updatedAt: chapter.updatedAt,
     };
@@ -172,7 +203,11 @@ export class ChaptersService {
    */
   async getChapterContent(chapterId: string): Promise<ChapterContentDto> {
     // Validate chapter ID format
-    if (!chapterId || typeof chapterId !== 'string' || chapterId.trim() === '') {
+    if (
+      !chapterId ||
+      typeof chapterId !== 'string' ||
+      chapterId.trim() === ''
+    ) {
       throw new BadRequestException('Invalid chapter ID format');
     }
 
@@ -238,6 +273,7 @@ export class ChaptersService {
       chapterNumber: chapter.chapterNumber,
       order: chapter.order,
       type: chapter.type,
+      status: chapter.status,
       description: chapter.description,
       bookId: chapter.bookId,
       createdAt: chapter.createdAt,

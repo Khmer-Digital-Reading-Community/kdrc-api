@@ -13,7 +13,6 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ChaptersModule } from './modules/chapters/chapters.module';
 import { BookmarksModule } from './modules/bookmarks/bookmarks.module';
-import { Bookmark } from './modules/bookmarks/bookmark.entity';
 import { CommentsModule } from './modules/interactions/comments/comments.module';
 @Module({
   imports: [
@@ -32,10 +31,8 @@ import { CommentsModule } from './modules/interactions/comments/comments.module'
     NotificationsModule,
     ChaptersModule,
     ReviewsModule,
-    ChaptersModule,
     BookmarksModule,
     CommentsModule,
-    Bookmark,
   ],
   controllers: [AppController],
   providers: [AppService],

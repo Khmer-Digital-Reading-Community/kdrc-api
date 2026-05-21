@@ -1,5 +1,13 @@
-import { IsString, IsNumber, IsEnum, IsOptional, MinLength, Min } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  MinLength,
+  Min,
+} from 'class-validator';
 import { ChapterType } from 'src/common/enums/chapter-type.enum';
+import { ChapterStatus } from 'src/common/enums/chapter-status.enum';
 
 export class UpdateChapterDto {
   @IsString()
@@ -20,6 +28,10 @@ export class UpdateChapterDto {
   @IsEnum(ChapterType)
   @IsOptional()
   type?: ChapterType;
+
+  @IsEnum(ChapterStatus)
+  @IsOptional()
+  status?: ChapterStatus;
 
   @IsNumber()
   @IsOptional()

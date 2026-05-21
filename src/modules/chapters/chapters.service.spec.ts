@@ -90,7 +90,7 @@ describe('ChaptersService - Chapter Content', () => {
         bookId: 'book-uuid-1',
         createdAt: mockChapter.createdAt,
         updatedAt: mockChapter.updatedAt,
-        wordCount: 26,
+        wordCount: 21,
         readingTimeMinutes: 1,
       });
       expect(mockChaptersRepo.findOne).toHaveBeenCalledWith({

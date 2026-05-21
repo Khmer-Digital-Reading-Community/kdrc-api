@@ -1,8 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  INestApplication,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ChaptersController } from './chapters.controller';
 import { ChaptersService } from './chapters.service';
 import { ChapterType } from 'src/common/enums/chapter-type.enum';
+import { ChapterStatus } from 'src/common/enums/chapter-status.enum';
 
 describe('ChaptersController - Chapter Content Endpoint', () => {
   let app: INestApplication;
@@ -16,6 +21,7 @@ describe('ChaptersController - Chapter Content Endpoint', () => {
     chapterNumber: 1,
     order: 0,
     type: ChapterType.CHAPTER,
+    status: ChapterStatus.DRAFT,
     description: 'First chapter',
     bookId: 'book-uuid-1',
     createdAt: new Date('2024-01-15T10:30:00Z'),
