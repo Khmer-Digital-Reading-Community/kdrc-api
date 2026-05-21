@@ -14,6 +14,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ChaptersModule } from './modules/chapters/chapters.module';
 import { BookmarksModule } from './modules/bookmarks/bookmarks.module';
 import { Bookmark } from './modules/bookmarks/bookmark.entity';
+import { CommentsModule } from './modules/interactions/comments/comments.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -33,6 +34,8 @@ import { Bookmark } from './modules/bookmarks/bookmark.entity';
     ReviewsModule,
     ChaptersModule,
     BookmarksModule,
+    CommentsModule,
+    Bookmark,
   ],
   controllers: [AppController],
   providers: [AppService],
