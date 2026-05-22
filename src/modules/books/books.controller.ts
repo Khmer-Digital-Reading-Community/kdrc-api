@@ -9,8 +9,22 @@ export class BooksController {
     constructor(private booksService: BooksService) { }
 
     @Get()
-    findAll() {
-        return this.booksService.findAll();
+    findAll(
+        @Query('page') page = 1,
+        @Query('limit') limit = 1,
+        @Query('search') search?: string,
+        @Query('genre') genre?: string,
+        @Query('author') author?: string,
+        @Query('minRating') minRating?: number,
+    ) {
+        return this.booksService.findAll(
+            Number(page),
+            Number(limit),
+            search,
+            genre,
+            author,
+            Number(minRating),
+        );
     }
 
     @Get('search')

@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Book } from './book.entity';
@@ -28,11 +28,113 @@ export class BooksService {
         private notificationsService: NotificationsService,
     ) { }
 
-    findAll() {
-        return this.repo.find({
-            relations: ['author'],
-            order: { createdAt: 'DESC' },
-        });
+    async findAll(
+        page: number,
+        limit: number,
+        search?: string,
+        genre?: string,
+        author?: string,
+        minRating?: number,
+    ) {
+        const skip = (page - 1) * limit;
+
+        const query = this.repo
+            .createQueryBuilder('book')
+            .leftJoinAndSelect('book.author', 'author')
+            .leftJoinAndSelect('book.categories', 'category')
+            .orderBy('book.createdAt', 'DESC')
+            .skip(skip)
+            .take(limit);
+
+        if (search) {
+            query.andWhere(
+                `
+                to_tsvector(
+                    'english',
+                    coalesce(book.title, '') || ' ' ||
+                    coalesce(book.content, '') || ' ' ||
+                    coalesce(author.name, '')
+                )
+                @@ plainto_tsquery('english', :search)
+                `,
+                { search },
+            );
+        }
+
+        if (genre) {
+            const genres = genre
+                .split(',')
+                .map((g) => g.trim().toLowerCase());
+
+            const validGenres = await this.categoryRepo.find();
+
+            const validSlugs = validGenres.map(
+                (g) => g.slug.toLowerCase(),
+            );
+
+            for (const g of genres) {
+                if (!validSlugs.includes(g)) {
+                    throw new BadRequestException(
+                        `Invalid genre: ${g}`,
+                    );
+                }
+            }
+
+            query.andWhere(
+                'LOWER(category.slug) IN (:...genres)',
+                { genres },
+            );
+        }
+
+        if (author) {
+            const existingAuthor = await this.usersRepo
+                .createQueryBuilder('user')
+                .where(
+                    'LOWER(user.name) LIKE LOWER(:author)',
+                    {
+                        author: `%${author}%`,
+                    },
+                )
+                .getOne();
+
+            if (!existingAuthor) {
+                throw new BadRequestException(
+                    `Author not found: ${author}`,
+                );
+            }
+            query.andWhere(
+                'LOWER(author.name) LIKE LOWER(:author)',
+                {
+                    author: `%${author}%`,
+                },
+            );
+        }
+
+        if (minRating !== undefined) {
+
+            if (
+                minRating !== undefined &&
+                (minRating < 0 || minRating > 5)
+            ) {
+                throw new BadRequestException(
+                    'Rating must be between 0 and 5',
+                );
+            }
+            query.andWhere(
+                'book.rating >= :minRating',
+                { minRating },
+            );
+        }
+
+        const [data, total] = await query.getManyAndCount();
+
+        return {
+            data,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 
     findOne(id: string) {
@@ -139,25 +241,25 @@ export class BooksService {
             .createQueryBuilder('book')
             .leftJoinAndSelect('book.author', 'author')
             .addSelect(`
-        ts_rank(
-            to_tsvector(
-            'english',
-            coalesce(book.title, '') || ' ' ||
-            coalesce(book.content, '') || ' ' ||
-            coalesce(author.name, '')
-            ),
-            plainto_tsquery('english', :query)
-        )
-        `, 'rank')
+                ts_rank(
+                    to_tsvector(
+                    'english',
+                    coalesce(book.title, '') || ' ' ||
+                    coalesce(book.content, '') || ' ' ||
+                    coalesce(author.name, '')
+                    ),
+                    plainto_tsquery('english', :query)
+                )
+                `, 'rank')
             .where(`
-        to_tsvector(
-            'english',
-            coalesce(book.title, '') || ' ' ||
-            coalesce(book.content, '') || ' ' ||
-            coalesce(author.name, '')
-        )
-        @@ plainto_tsquery('english', :query)
-        `, {
+                to_tsvector(
+                    'english',
+                    coalesce(book.title, '') || ' ' ||
+                    coalesce(book.content, '') || ' ' ||
+                    coalesce(author.name, '')
+                )
+                @@ plainto_tsquery('english', :query)
+                `, {
                 query: q,
             })
             .orderBy('rank', 'DESC')
