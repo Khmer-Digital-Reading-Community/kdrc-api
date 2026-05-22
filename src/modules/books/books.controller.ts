@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Req, Patch, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Req, Patch, Delete, Query } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -7,6 +7,15 @@ import { UpdateBookDto } from './dto/update-book.dto';
 @Controller('books')
 export class BooksController {
     constructor(private booksService: BooksService) { }
+
+    @Get('search')
+    search(
+        @Query('q') query: string,
+        @Query('page') page: string = '1',
+        @Query('limit') limit: string = '12',
+    ) {
+        return this.booksService.search(query, parseInt(page), parseInt(limit));
+    }
 
     @Get()
     findAll() {

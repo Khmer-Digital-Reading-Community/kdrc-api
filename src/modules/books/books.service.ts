@@ -35,6 +35,40 @@ export class BooksService {
         });
     }
 
+    async search(query: string, page: number = 1, limit: number = 12) {
+        if (!query || query.trim() === '') {
+            return {
+                data: [],
+                total: 0,
+                page,
+                limit,
+                pages: 0,
+            };
+        }
+
+        const skip = (page - 1) * limit;
+        const searchTerm = `%${query}%`;
+
+        const [data, total] = await this.repo
+            .createQueryBuilder('book')
+            .leftJoinAndSelect('book.author', 'author')
+            .where('book.title ILIKE :searchTerm', { searchTerm })
+            .orWhere('book.description ILIKE :searchTerm', { searchTerm })
+            .orWhere('author.name ILIKE :searchTerm', { searchTerm })
+            .orderBy('book.createdAt', 'DESC')
+            .skip(skip)
+            .take(limit)
+            .getManyAndCount();
+
+        return {
+            data,
+            total,
+            page,
+            limit,
+            pages: Math.ceil(total / limit),
+        };
+    }
+
     findOne(id: string) {
         return this.repo.findOne({
             where: { id },
