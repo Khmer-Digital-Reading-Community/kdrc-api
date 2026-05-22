@@ -13,8 +13,9 @@ export class BooksController {
         @Query('q') query: string,
         @Query('page') page: string = '1',
         @Query('limit') limit: string = '12',
+        @Query('sort') sort: string = 'recent',
     ) {
-        return this.booksService.search(query, parseInt(page), parseInt(limit));
+        return this.booksService.search(query, parseInt(page), parseInt(limit), sort);
     }
 
     @Get()

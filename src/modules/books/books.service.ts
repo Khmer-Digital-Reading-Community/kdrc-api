@@ -35,7 +35,7 @@ export class BooksService {
         });
     }
 
-    async search(query: string, page: number = 1, limit: number = 12) {
+    async search(query: string, page: number = 1, limit: number = 12, sort: string = 'recent') {
         if (!query || query.trim() === '') {
             return {
                 data: [],
@@ -49,13 +49,44 @@ export class BooksService {
         const skip = (page - 1) * limit;
         const searchTerm = `%${query}%`;
 
-        const [data, total] = await this.repo
+        let query_builder = this.repo
             .createQueryBuilder('book')
             .leftJoinAndSelect('book.author', 'author')
+            .leftJoinAndSelect('book.reviews', 'reviews', 'reviews.rating IS NOT NULL')
             .where('book.title ILIKE :searchTerm', { searchTerm })
-            .orWhere('book.description ILIKE :searchTerm', { searchTerm })
-            .orWhere('author.name ILIKE :searchTerm', { searchTerm })
-            .orderBy('book.createdAt', 'DESC')
+            .orWhere('book.content ILIKE :searchTerm', { searchTerm })
+            .orWhere('author.name ILIKE :searchTerm', { searchTerm });
+
+        // Apply sorting based on sort parameter
+        switch (sort) {
+            case 'popular':
+                // Sort by most recently updated (most active)
+                query_builder = query_builder.orderBy('book.updatedAt', 'DESC');
+                break;
+            case 'trending':
+                // Sort by creation date but only recent books (within last 30 days)
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                query_builder = query_builder
+                    .andWhere('book.createdAt >= :thirtyDaysAgo', { thirtyDaysAgo })
+                    .orderBy('book.createdAt', 'DESC');
+                break;
+            case 'rating':
+                // Sort by average rating from reviews
+                query_builder = query_builder
+                    .addSelect('AVG(reviews.rating)', 'avgRating')
+                    .groupBy('book.id')
+                    .addGroupBy('author.id')
+                    .orderBy('avgRating', 'DESC');
+                break;
+            case 'recent':
+            default:
+                // Default: sort by creation date (most recent first)
+                query_builder = query_builder.orderBy('book.createdAt', 'DESC');
+                break;
+        }
+
+        const [data, total] = await query_builder
             .skip(skip)
             .take(limit)
             .getManyAndCount();
