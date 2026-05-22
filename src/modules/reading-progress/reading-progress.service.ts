@@ -1,15 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReadingProgress } from './reading-progress.entity';
 import { UpsertProgressDto } from './dto/upsert-progress.dto';
+import { Chapter } from '../chapters/entities/chapter.entity';
+import { Book } from '../books/book.entity';
 
 @Injectable()
 export class ReadingProgressService {
   constructor(
     @InjectRepository(ReadingProgress)
     private repo: Repository<ReadingProgress>,
+
+    @InjectRepository(Book)
+    private bookRepo: Repository<Book>,
+
+    @InjectRepository(Chapter)
+    private chaptersRepo: Repository<Chapter>,
   ) {}
+
 
   findByUser(userId: string) {
     return this.repo.find({
@@ -20,12 +29,40 @@ export class ReadingProgressService {
   }
 
   async upsert(userId: string, dto: UpsertProgressDto) {
+    const book = await this.bookRepo.findOne({
+      where: { id: dto.bookId },
+    });
+    if (!book) throw new NotFoundException('Book not found');
+
+    let percentageCompleted = dto.percentageCompleted ?? 0;
+
+    if (dto.chapterId) {
+      const chapter = await this.chaptersRepo.findOne({
+        where: { id: dto.chapterId },
+        relations: ['book'],
+      });
+
+      if (!chapter) throw new NotFoundException('Chapter not found');
+      if (chapter.book.id !== dto.bookId)
+        throw new BadRequestException('Chapter does not belong to this book');
+
+      const totalChapters = await this.chaptersRepo.count({
+        where: { book: { id: dto.bookId } },
+      });
+
+      if (totalChapters > 0) {
+        percentageCompleted = Math.round(
+          (chapter.chapterNumber / totalChapters) * 100,
+        );
+      }
+    }
+
     const existing = await this.repo.findOne({
       where: { user: { id: userId }, book: { id: dto.bookId } },
     });
 
     if (existing) {
-      existing.percentageCompleted = dto.percentageCompleted;
+      existing.percentageCompleted = percentageCompleted;
       existing.lastReadAt = new Date();
       if (dto.chapterId) existing.chapter = { id: dto.chapterId } as any;
       return this.repo.save(existing);
@@ -35,7 +72,7 @@ export class ReadingProgressService {
       user: { id: userId } as any,
       book: { id: dto.bookId } as any,
       chapter: dto.chapterId ? ({ id: dto.chapterId } as any) : undefined,
-      percentageCompleted: dto.percentageCompleted,
+      percentageCompleted,
     });
     return this.repo.save(progress);
   }
