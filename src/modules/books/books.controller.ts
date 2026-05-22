@@ -11,11 +11,13 @@ export class BooksController {
     @Get()
     findAll(
         @Query('page') page = 1,
-        @Query('limit') limit = 1,
+        @Query('limit') limit?: number,
         @Query('search') search?: string,
         @Query('genre') genre?: string,
         @Query('author') author?: string,
         @Query('minRating') minRating?: number,
+        @Query('sort') sort?: string,
+        @Query('order') order?: string,
     ) {
         return this.booksService.findAll(
             Number(page),
@@ -24,6 +26,8 @@ export class BooksController {
             genre,
             author,
             Number(minRating),
+            sort,
+            order,
         );
     }
 

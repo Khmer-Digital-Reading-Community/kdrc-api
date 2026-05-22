@@ -39,6 +39,16 @@ export class Book {
   })
   rating!: number;
 
+  @Column({
+    default: 0,
+  })
+  readCount?: number;
+
+  @Column({
+    default: 0,
+  })
+  likeCount?: number;
+
   @ManyToOne(() => User, (user) => user.books, {
     onDelete: 'CASCADE',
   })

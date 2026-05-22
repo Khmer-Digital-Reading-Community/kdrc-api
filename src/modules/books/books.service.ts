@@ -35,18 +35,22 @@ export class BooksService {
         genre?: string,
         author?: string,
         minRating?: number,
+        sort?: string,
+        order?: string,
     ) {
+        page = Number(page) || 1;
+        limit = Number(limit) || 10;
+
         const skip = (page - 1) * limit;
 
         const query = this.repo
             .createQueryBuilder('book')
             .leftJoinAndSelect('book.author', 'author')
             .leftJoinAndSelect('book.categories', 'category')
-            .orderBy('book.createdAt', 'DESC')
             .skip(skip)
             .take(limit);
 
-        if (search) {
+        if (search && search.trim().length > 0) {
             query.andWhere(
                 `
                 to_tsvector(
@@ -61,69 +65,109 @@ export class BooksService {
             );
         }
 
-        if (genre) {
+        if (genre && genre.trim().length > 0) {
             const genres = genre
                 .split(',')
-                .map((g) => g.trim().toLowerCase());
+                .map((g) => g.trim().toLowerCase())
+                .filter(Boolean);
 
-            const validGenres = await this.categoryRepo.find();
-
-            const validSlugs = validGenres.map(
-                (g) => g.slug.toLowerCase(),
-            );
-
-            for (const g of genres) {
-                if (!validSlugs.includes(g)) {
-                    throw new BadRequestException(
-                        `Invalid genre: ${g}`,
-                    );
-                }
-            }
-
-            query.andWhere(
-                'LOWER(category.slug) IN (:...genres)',
-                { genres },
-            );
-        }
-
-        if (author) {
-            const existingAuthor = await this.usersRepo
-                .createQueryBuilder('user')
-                .where(
-                    'LOWER(user.name) LIKE LOWER(:author)',
-                    {
-                        author: `%${author}%`,
-                    },
-                )
-                .getOne();
-
-            if (!existingAuthor) {
-                throw new BadRequestException(
-                    `Author not found: ${author}`,
+            if (genres.length > 0) {
+                query.andWhere(
+                    'LOWER(category.slug) IN (:...genres)',
+                    { genres },
                 );
             }
+        }
+
+        if (author && author.trim().length > 0) {
             query.andWhere(
                 'LOWER(author.name) LIKE LOWER(:author)',
                 {
-                    author: `%${author}%`,
+                    author: `%${author.trim()}%`,
                 },
             );
         }
 
-        if (minRating !== undefined) {
-
-            if (
-                minRating !== undefined &&
-                (minRating < 0 || minRating > 5)
-            ) {
-                throw new BadRequestException(
-                    'Rating must be between 0 and 5',
-                );
-            }
+        if (!isNaN(Number(minRating))) {
             query.andWhere(
                 'book.rating >= :minRating',
-                { minRating },
+                {
+                    minRating: Number(minRating),
+                },
             );
+        }
+
+        const allowedSorts = [
+            'popular',
+            'rating',
+            'latest',
+            'oldest',
+            'likes',
+            'reads',
+            'updated',
+        ];
+
+        if (sort && !allowedSorts.includes(sort)) {
+            throw new BadRequestException(
+                `Invalid sort value: ${sort}`,
+            );
+        }
+
+        const allowedOrders = ['asc', 'desc'];
+
+        if (
+            order &&
+            !allowedOrders.includes(order.toLowerCase())
+        ) {
+            throw new BadRequestException(
+                `Invalid order value: ${order}`,
+            );
+        }
+
+        const sortOrder =
+            order?.toUpperCase() === 'ASC'
+                ? 'ASC'
+                : 'DESC';
+
+        switch (sort) {
+            case 'popular':
+                query
+                    .addSelect(
+                        'book.readCount + (book.likeCount * 3)',
+                        'popularityscore',
+                    )
+                    .orderBy('popularityscore', sortOrder);
+                break;
+
+            case 'rating':
+                query.orderBy('book.rating', sortOrder);
+                break;
+
+            case 'latest':
+                query.orderBy('book.createdAt', 'DESC');
+                break;
+
+            case 'oldest':
+                query.orderBy('book.createdAt', 'ASC');
+                break;
+
+            case 'likes':
+                query.orderBy('book.likeCount', sortOrder);
+                break;
+
+            case 'reads':
+                query.orderBy('book.readCount', sortOrder);
+                break;
+
+            case 'updated':
+                query.orderBy(
+                    'book.updatedAt',
+                    sortOrder,
+                );
+                break;
+
+            default:
+                query.orderBy('book.createdAt', sortOrder);
         }
 
         const [data, total] = await query.getManyAndCount();
@@ -137,11 +181,23 @@ export class BooksService {
         };
     }
 
-    findOne(id: string) {
-        return this.repo.findOne({
+    async findOne(id: string) {
+        const book = await this.repo.findOne({
             where: { id },
-            relations: ['author'],
+            relations: ['author', 'categories'],
         });
+
+        if (!book) {
+            throw new NotFoundException(
+                'Book not found',
+            );
+        }
+
+        book.readCount = (book.readCount || 0) + 1;
+
+        await this.repo.save(book);
+
+        return book;
     }
 
     async create(dto: CreateBookDto, user: any) {
