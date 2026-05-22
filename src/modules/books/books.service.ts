@@ -10,6 +10,7 @@ import { User } from '../users/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BookStatus } from 'src/common/enums/book-status.enum';
 import { NotificationType } from '../notifications/notification.entity';
+import { QueryBooksDto } from './dto/query-books.dto';
 
 const MAX_FREE_BOOKS = 5;
 
@@ -28,29 +29,37 @@ export class BooksService {
         private notificationsService: NotificationsService,
     ) { }
 
-    async findAll(
-        page: number,
-        limit: number,
-        search?: string,
-        genre?: string,
-        author?: string,
-        minRating?: number,
-        sort?: string,
-        order?: string,
-    ) {
-        page = Number(page) || 1;
-        limit = Number(limit) || 10;
+    async findAll(queryDto: QueryBooksDto) {
+        const {
+            page = '1',
+            limit = '10',
+            search,
+            genre,
+            author,
+            minRating,
+            sort,
+            order,
+        } = queryDto;
 
-        const skip = (page - 1) * limit;
+        const pageNumber = Number(page);
+        const limitNumber = Number(limit);
+
+        const skip = (pageNumber - 1) * limitNumber;
 
         const query = this.repo
             .createQueryBuilder('book')
-            .leftJoinAndSelect('book.author', 'author')
-            .leftJoinAndSelect('book.categories', 'category')
+            .leftJoinAndSelect(
+                'book.author',
+                'author',
+            )
+            .leftJoinAndSelect(
+                'book.categories',
+                'category',
+            )
             .skip(skip)
-            .take(limit);
+            .take(limitNumber);
 
-        if (search && search.trim().length > 0) {
+        if (search?.trim()) {
             query.andWhere(
                 `
                 to_tsvector(
@@ -65,7 +74,7 @@ export class BooksService {
             );
         }
 
-        if (genre && genre.trim().length > 0) {
+        if (genre?.trim()) {
             const genres = genre
                 .split(',')
                 .map((g) => g.trim().toLowerCase())
@@ -79,16 +88,16 @@ export class BooksService {
             }
         }
 
-        if (author && author.trim().length > 0) {
+        if (author?.trim()) {
             query.andWhere(
                 'LOWER(author.name) LIKE LOWER(:author)',
                 {
-                    author: `%${author.trim()}%`,
+                    author: `%${author}%`,
                 },
             );
         }
 
-        if (!isNaN(Number(minRating))) {
+        if (minRating) {
             query.andWhere(
                 'book.rating >= :minRating',
                 {
@@ -136,27 +145,45 @@ export class BooksService {
                         'book.readCount + (book.likeCount * 3)',
                         'popularityscore',
                     )
-                    .orderBy('popularityscore', sortOrder);
+                    .orderBy(
+                        'popularityscore',
+                        sortOrder,
+                    );
                 break;
 
             case 'rating':
-                query.orderBy('book.rating', sortOrder);
+                query.orderBy(
+                    'book.rating',
+                    sortOrder,
+                );
                 break;
 
             case 'latest':
-                query.orderBy('book.createdAt', 'DESC');
+                query.orderBy(
+                    'book.createdAt',
+                    sortOrder,
+                );
                 break;
 
             case 'oldest':
-                query.orderBy('book.createdAt', 'ASC');
+                query.orderBy(
+                    'book.createdAt',
+                    sortOrder,
+                );
                 break;
 
             case 'likes':
-                query.orderBy('book.likeCount', sortOrder);
+                query.orderBy(
+                    'book.likeCount',
+                    sortOrder,
+                );
                 break;
 
             case 'reads':
-                query.orderBy('book.readCount', sortOrder);
+                query.orderBy(
+                    'book.readCount',
+                    sortOrder,
+                );
                 break;
 
             case 'updated':
@@ -167,17 +194,23 @@ export class BooksService {
                 break;
 
             default:
-                query.orderBy('book.createdAt', sortOrder);
+                query.orderBy(
+                    'book.createdAt',
+                    'DESC',
+                );
         }
 
-        const [data, total] = await query.getManyAndCount();
+        const [data, total] =
+            await query.getManyAndCount();
 
         return {
             data,
             total,
-            page,
-            limit,
-            totalPages: Math.ceil(total / limit),
+            page: pageNumber,
+            limit: limitNumber,
+            totalPages: Math.ceil(
+                total / limitNumber,
+            ),
         };
     }
 
