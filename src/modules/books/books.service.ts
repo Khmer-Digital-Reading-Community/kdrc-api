@@ -82,12 +82,13 @@ export class BooksService {
       });
     }
 
-    const book = this.repo.create({
-      ...dto,
-      author: { id: user.id },
-      categories,
-      status: BookStatus.DRAFT,
-    });
+        const book = this.repo.create({
+            title: dto.title,
+            content: dto.content,
+            author: { id: user.id },
+            categories,
+            status: BookStatus.DRAFT,
+        });
 
     const savedBook = await this.repo.save(book);
 
