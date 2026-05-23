@@ -1,7 +1,11 @@
-import { Controller, Post, Get, Delete, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Query, UseGuards, Request } from '@nestjs/common';
 import { BookmarksService } from './bookmarks.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BookmarkType } from './bookmark.entity';
+import { CreateBookmarkDto } from './dto/create-bookmark.dto';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+
+@ApiTags('bookmarks')
 
 @Controller('bookmarks')
 @UseGuards(JwtAuthGuard) 
@@ -10,39 +14,32 @@ export class BookmarksController {
 
 
   @Post()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add a new bookmark (Book or Chapter)' })
   async add(
-    @Query('type') type: BookmarkType,
-    @Query('targetId') targetId: string,
+    @Query() queryDto: CreateBookmarkDto,
     @Request() req,
   ) {
-    this.validateQueryParams(type, targetId);
-    return this.bookmarksService.addBookmark(req.user.id, type, targetId);
+    return this.bookmarksService.addBookmark(req.user.id, queryDto.type, queryDto.targetId);
   }
 
   // GET /bookmarks
   @Get()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Fetch all bookmarks saved by the user' })
   async list(@Request() req) {
     return this.bookmarksService.getMyBookmarks(req.user.id);
   }
 
 
   @Delete()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove a bookmark from your collection' })
   async remove(
-    @Query('type') type: BookmarkType,
-    @Query('targetId') targetId: string,
+    @Query() queryDto: CreateBookmarkDto,
     @Request() req,
   ) {
-    this.validateQueryParams(type, targetId);
-    return this.bookmarksService.removeBookmark(req.user.id, type, targetId);
+    return this.bookmarksService.removeBookmark(req.user.id, queryDto.type, queryDto.targetId);
   }
 
-
-  private validateQueryParams(type: BookmarkType, targetId: string) {
-    if (!type || !targetId) {
-      throw new BadRequestException('Missing parameters. Both "type" and "targetId" are required.');
-    }
-    if (!Object.values(BookmarkType).includes(type)) {
-      throw new BadRequestException('Invalid type parameter value. Must be BOOK or CHAPTER.');
-    }
-  }
 }

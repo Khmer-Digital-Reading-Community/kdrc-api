@@ -23,7 +23,7 @@ export class Book {
   @Column()
   title!: string;
 
-  @Column('text')
+  @Column('text', { nullable: true })
   content!: string;
 
     @Column({
