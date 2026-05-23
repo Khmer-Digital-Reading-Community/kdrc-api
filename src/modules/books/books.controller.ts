@@ -9,20 +9,22 @@ import {
   Patch,
   Delete,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { User } from '../users/user.entity';
+import { GetBooksDto } from './dto/get-books.dto';
 
 @Controller('books')
 export class BooksController {
   constructor(private booksService: BooksService) {}
 
   @Get()
-  findAll() {
-    return this.booksService.findAll();
+  findAll(@Query() query: GetBooksDto) {
+    return this.booksService.findAll(query);
   }
 
   @Get(':id')
