@@ -1,33 +1,33 @@
-import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { CreateBookMetadataDto } from './create-book-metadata.dto';
 
 export class CreateBookDto {
   @IsString()
   title!: string;
 
   @IsString()
-  content!: string;
+  description!: string;
 
   @IsOptional()
   @IsString()
   coverImageUrl?: string;
 
   @IsOptional()
+  @IsString()
+  genreSlug?: string;
+
+  @IsOptional()
   @IsArray()
+  @IsString({ each: true })
   categorySlugs?: string[];
 
   @IsOptional()
-  @IsString()
-  language?: string;
+  @IsArray()
+  @IsString({ each: true })
+  tagSlugs?: string[];
 
   @IsOptional()
-  @IsString()
-  genre?: string;
-
-  @IsOptional()
-  @IsNumber()
-  pageCount?: number;
-
-  @IsOptional()
-  @IsString()
-  publisher?: string;
+  @Type(() => CreateBookMetadataDto)
+  metadata?: CreateBookMetadataDto;
 }

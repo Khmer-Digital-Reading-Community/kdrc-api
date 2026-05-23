@@ -12,11 +12,15 @@ import { UpdateBookDto } from './dto/update-book.dto';
 import { Role } from 'src/common/enums/role.enum';
 import { Category } from '../categories/category.entity';
 import { User } from '../users/user.entity';
+import { Genre } from '../genres/entities/genre.entity';
+import { Tag } from '../tags/entities/tag.entity';
+import { BookMetadata } from './entities/book-metadata.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BookStatus } from 'src/common/enums/book-status.enum';
 import { NotificationType } from '../notifications/notification.entity';
-
-const MAX_FREE_BOOKS = 5;
+import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
+import { GenreService } from '../genres/genres.service';
+import { TagService } from '../tags/tags.service';
 
 @Injectable()
 export class BooksService {
@@ -27,16 +31,28 @@ export class BooksService {
     @InjectRepository(Category)
     private categoryRepo: Repository<Category>,
 
+    @InjectRepository(Genre)
+    private genreRepo: Repository<Genre>,
+
+    @InjectRepository(Tag)
+    private tagRepo: Repository<Tag>,
+
+    @InjectRepository(BookMetadata)
+    private metadataRepo: Repository<BookMetadata>,
+
     @InjectRepository(User)
     private usersRepo: Repository<User>,
 
     private notificationsService: NotificationsService,
+    private cloudinaryService: CloudinaryService,
+    private genreService: GenreService,
+    private tagService: TagService,
   ) {}
 
   findAll() {
     return this.repo.find({
       where: { status: BookStatus.PUBLISHED },
-      relations: ['author', 'categories', 'reviews', 'reviews.reviewer'],
+      relations: ['author', 'categories', 'genre', 'tags', 'metadata', 'reviews', 'reviews.reviewer'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -47,6 +63,9 @@ export class BooksService {
       relations: [
         'author',
         'categories',
+        'genre',
+        'tags',
+        'metadata',
         'chapters',
         'reviews',
         'reviews.reviewer',
@@ -65,6 +84,7 @@ export class BooksService {
   findAuthorBooks(userId: string) {
     return this.repo.find({
       where: { author: { id: userId } },
+      relations: ['genre', 'categories', 'tags', 'metadata'],
       order: { updatedAt: 'DESC' },
     });
   }
@@ -94,7 +114,6 @@ export class BooksService {
       totalBooks,
       totalPublished,
       totalWords,
-      // Mocking streak and engagement for now as they require more complex tracking
       streakDays: 14,
       engagementRate: 12.4,
     };
@@ -105,28 +124,49 @@ export class BooksService {
       throw new UnauthorizedException();
     }
 
-    let categories: Category[] = [];
+    const categories = dto.categorySlugs?.length
+      ? await this.categoryRepo.find({
+          where: { slug: In(dto.categorySlugs) },
+        })
+      : [];
 
-    if (dto.categorySlugs?.length) {
-      categories = await this.categoryRepo.find({
-        where: {
-          slug: In(dto.categorySlugs),
-        },
-      });
+    let genre: Genre | undefined;
+    if (dto.genreSlug) {
+      genre = await this.genreService.getOrCreate(dto.genreSlug);
     }
+
+    const tags = dto.tagSlugs?.length
+      ? await Promise.all(
+          dto.tagSlugs.map((slug) =>
+            this.tagService.getOrCreateBySlug(slug),
+          ),
+        )
+      : [];
 
     const book = this.repo.create({
       title: dto.title,
-      content: dto.content,
+      description: dto.description,
       coverImageUrl: dto.coverImageUrl,
       author: { id: user.id },
       categories,
+      genre,
+      tags,
       status: BookStatus.DRAFT,
     });
 
     const savedBook = await this.repo.save(book);
 
-    // Notify author about book creation
+    // Create metadata if provided
+    if (dto.metadata) {
+      const metadata = this.metadataRepo.create({
+        ...dto.metadata,
+        bookId: savedBook.id,
+        book: savedBook,
+      });
+      await this.metadataRepo.save(metadata);
+      savedBook.metadata = metadata;
+    }
+
     await this.notificationsService.create({
       title: 'Book Created',
       message: `Your book "${savedBook.title}" has been created successfully!`,
@@ -154,11 +194,50 @@ export class BooksService {
       throw new ForbiddenException('You cannot update this book');
     }
 
+    if (dto.coverImageUrl && book.coverImageUrl && dto.coverImageUrl !== book.coverImageUrl) {
+      this.deleteOldCover(book.coverImageUrl).catch((err) => {
+        console.error('Failed to delete old cover:', err);
+      });
+    }
+
+    // Handle relationships
+    if (dto.categorySlugs) {
+      const categories = await this.categoryRepo.find({
+        where: { slug: In(dto.categorySlugs) },
+      });
+      book.categories = categories;
+    }
+
+    if (dto.genreSlug) {
+      book.genre = await this.genreService.getOrCreate(dto.genreSlug);
+    }
+
+    if (dto.tagSlugs) {
+      book.tags = await Promise.all(
+        dto.tagSlugs.map((slug) => this.tagService.getOrCreateBySlug(slug)),
+      );
+    }
+
     const oldStatus = book.status;
     Object.assign(book, dto);
     const updatedBook = await this.repo.save(book);
 
-    // If book status changed to PUBLISHED, notify all users
+    // Update metadata if provided
+    if (dto.metadata) {
+      let metadata = await this.metadataRepo.findOne({
+        where: { bookId: id },
+      });
+      if (!metadata) {
+        metadata = this.metadataRepo.create({
+          ...dto.metadata,
+          bookId: id,
+        });
+      } else {
+        Object.assign(metadata, dto.metadata);
+      }
+      await this.metadataRepo.save(metadata);
+    }
+
     if (
       oldStatus !== BookStatus.PUBLISHED &&
       updatedBook.status === BookStatus.PUBLISHED
@@ -186,8 +265,34 @@ export class BooksService {
       throw new ForbiddenException('You cannot delete this book');
     }
 
+    if (book.coverImageUrl) {
+      this.deleteOldCover(book.coverImageUrl).catch((err) => {
+        console.error('Failed to delete cover:', err);
+      });
+    }
+
     await this.repo.remove(book);
     return { message: 'Book deleted' };
+  }
+
+  private async deleteOldCover(imageUrl: string): Promise<void> {
+    try {
+      const publicId = this.extractPublicId(imageUrl);
+      if (publicId) {
+        await this.cloudinaryService.deleteFile(publicId);
+      }
+    } catch (error) {
+      console.error('Error deleting cover from Cloudinary:', error);
+    }
+  }
+
+  private extractPublicId(imageUrl: string): string | null {
+    try {
+      const match = imageUrl.match(/\/toscan\/book-covers\/([^/]+)$/);
+      return match ? `toscan/book-covers/${match[1]}` : null;
+    } catch {
+      return null;
+    }
   }
 
   private async notifyAllUsersAboutBookAvailable(book: Book) {

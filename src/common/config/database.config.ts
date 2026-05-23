@@ -8,6 +8,9 @@ import { Bookmark } from 'src/modules/bookmarks/bookmark.entity';
 import { Chapter } from 'src/modules/chapters/entities/chapter.entity';
 import { Comment } from 'src/modules/interactions/comments/entities/comment.entity';
 import { ChapterType } from '../enums';
+import { Genre } from 'src/modules/genres/entities/genre.entity';
+import { Tag } from 'src/modules/tags/entities/tag.entity';
+import { BookMetadata } from 'src/modules/books/entities/book-metadata.entity';
 
 const toBool = (value: string | undefined, fallback = false) => {
   if (value === undefined) {
@@ -32,6 +35,9 @@ export const databaseConfig: DataSourceOptions = {
     Bookmark,
     Chapter,
     Comment,
+    Genre,
+    Tag,
+    BookMetadata,
   ],
   synchronize: toBool(process.env.TYPEORM_SYNC, true),
   migrations: ['dist/migrations/*.js'],

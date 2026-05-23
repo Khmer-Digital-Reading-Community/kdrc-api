@@ -15,8 +15,8 @@ export class CreateChapterDto {
   title!: string;
 
   @IsString()
-  @MinLength(1)
-  content!: string;
+  @IsOptional()
+  content?: string;
 
   @IsNumber()
   @Min(1)

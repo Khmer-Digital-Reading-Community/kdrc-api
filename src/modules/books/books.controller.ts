@@ -13,16 +13,18 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { BooksService } from './books.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
 
 @Controller('books')
 export class BooksController {
-  constructor(private booksService: BooksService) {}
+  constructor(
+    private booksService: BooksService,
+    private cloudinaryService: CloudinaryService,
+  ) {}
 
   @Get()
   findAll() {
@@ -58,14 +60,6 @@ export class BooksController {
   @Post('cover')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: 'uploads/covers',
-        filename: (_req, file, cb) => {
-          const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-          const ext = extname(file.originalname) || '.png';
-          cb(null, `cover-${uniqueSuffix}${ext}`);
-        },
-      }),
       limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
       fileFilter: (_req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
@@ -78,11 +72,42 @@ export class BooksController {
       },
     }),
   )
-  uploadCover(@UploadedFile() file?: Express.Multer.File) {
+  async uploadCover(@UploadedFile() file?: Express.Multer.File) {
     if (!file) {
+      console.error('No file received in uploadCover endpoint');
       throw new BadRequestException('Cover image is required');
     }
-    return { url: `/uploads/covers/${file.filename}` };
+
+    console.log('File received:', {
+      filename: file.filename,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      encoding: file.encoding,
+    });
+
+    try {
+      const result = await this.cloudinaryService.uploadBookCover(file);
+      console.log('Upload successful:', {
+        public_id: result.public_id,
+        secure_url: result.secure_url,
+      });
+
+      return {
+        success: true,
+        url: result.secure_url,
+        publicId: result.public_id,
+        width: result.width,
+        height: result.height,
+        size: result.bytes,
+      };
+    } catch (error: any) {
+      console.error('Upload error:', {
+        message: error.message,
+        error: error,
+      });
+      throw new BadRequestException(`Upload failed: ${error.message}`);
+    }
   }
 
   @UseGuards(JwtAuthGuard)

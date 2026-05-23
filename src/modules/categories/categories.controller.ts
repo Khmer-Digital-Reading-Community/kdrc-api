@@ -10,6 +10,11 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 export class CategoriesController {
   constructor(private service: CategoriesService) {}
 
+  @Get()
+  findAll() {
+    return this.service.findAll();
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Post()

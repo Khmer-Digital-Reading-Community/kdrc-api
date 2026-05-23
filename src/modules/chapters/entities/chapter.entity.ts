@@ -13,6 +13,12 @@ import { Comment } from '../../interactions/comments/entities/comment.entity';
 import { ChapterType } from 'src/common/enums/chapter-type.enum';
 import { ChapterStatus } from 'src/common/enums/chapter-status.enum';
 
+export enum ChapterContentType {
+  TEXT = 'text',
+  TEXT_WITH_IMAGES = 'text-with-images',
+  INTERACTIVE = 'interactive',
+}
+
 @Entity('chapters')
 @Index(['bookId', 'chapterNumber'])
 export class Chapter {
@@ -47,6 +53,16 @@ export class Chapter {
 
   @Column({ nullable: true })
   description?: string;
+
+  @Column({ nullable: true })
+  imageUrl?: string;
+
+  @Column({
+    type: 'enum',
+    enum: ChapterContentType,
+    default: ChapterContentType.TEXT,
+  })
+  contentType!: ChapterContentType;
 
   @Column()
   bookId!: string;

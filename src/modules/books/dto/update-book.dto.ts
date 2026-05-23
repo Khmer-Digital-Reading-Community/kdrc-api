@@ -1,5 +1,7 @@
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsOptional, IsString, IsEnum } from 'class-validator';
+import { Type } from 'class-transformer';
 import { BookStatus } from 'src/common/enums/book-status.enum';
+import { CreateBookMetadataDto } from './create-book-metadata.dto';
 
 export class UpdateBookDto {
   @IsOptional()
@@ -8,7 +10,7 @@ export class UpdateBookDto {
 
   @IsOptional()
   @IsString()
-  content?: string;
+  description?: string;
 
   @IsOptional()
   @IsString()
@@ -20,17 +22,19 @@ export class UpdateBookDto {
 
   @IsOptional()
   @IsString()
-  language?: string;
+  genreSlug?: string;
 
   @IsOptional()
-  @IsString()
-  genre?: string;
+  @IsArray()
+  @IsString({ each: true })
+  categorySlugs?: string[];
 
   @IsOptional()
-  @IsNumber()
-  pageCount?: number;
+  @IsArray()
+  @IsString({ each: true })
+  tagSlugs?: string[];
 
   @IsOptional()
-  @IsString()
-  publisher?: string;
+  @Type(() => CreateBookMetadataDto)
+  metadata?: CreateBookMetadataDto;
 }

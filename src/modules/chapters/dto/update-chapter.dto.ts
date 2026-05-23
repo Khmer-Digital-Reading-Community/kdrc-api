@@ -16,7 +16,6 @@ export class UpdateChapterDto {
   title?: string;
 
   @IsString()
-  @MinLength(1)
   @IsOptional()
   content?: string;
 

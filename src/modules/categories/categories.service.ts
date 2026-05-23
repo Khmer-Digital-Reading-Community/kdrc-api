@@ -43,4 +43,10 @@ export class CategoriesService {
       relations: ['books'],
     });
   }
+
+  async findAll() {
+    return this.repo.find({
+      order: { name: 'ASC' },
+    });
+  }
 }
