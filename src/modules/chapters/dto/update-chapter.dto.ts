@@ -1,18 +1,21 @@
 import { IsString, IsNumber, IsEnum, IsOptional, MinLength, Min } from 'class-validator';
 import { ChapterType } from 'src/common/enums/chapter-type.enum';
 
-export class CreateChapterDto {
+export class UpdateChapterDto {
   @IsString()
   @MinLength(1)
-  title!: string;
+  @IsOptional()
+  title?: string;
 
   @IsString()
   @MinLength(1)
-  content!: string;
+  @IsOptional()
+  content?: string;
 
   @IsNumber()
   @Min(1)
-  chapterNumber!: number;
+  @IsOptional()
+  chapterNumber?: number;
 
   @IsEnum(ChapterType)
   @IsOptional()
@@ -25,7 +28,4 @@ export class CreateChapterDto {
   @IsString()
   @IsOptional()
   description?: string;
-
-  @IsString()
-  bookId!: string;
 }

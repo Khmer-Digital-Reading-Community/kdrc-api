@@ -1,0 +1,276 @@
+{
+  "info": {
+    "name": "Chapters API Testing",
+    "description": "Complete API testing collection for Chapters by Book ID feature",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"TestPassword123\",\n  \"name\": \"Test User\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/auth/signup",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["auth", "signup"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"TestPassword123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "item": [
+        {
+          "name": "Create Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Test Book for Chapters\",\n  \"content\": \"This is a test book for testing the chapters endpoint\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/books",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["books"]
+            }
+          }
+        },
+        {
+          "name": "Get All Books",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3001/books",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["books"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chapters",
+      "item": [
+        {
+          "name": "Get Chapters by Book ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3001/chapters/book/550e8400-e29b-41d4-a716-446655440000",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["chapters", "book", "550e8400-e29b-41d4-a716-446655440000"]
+            }
+          }
+        },
+        {
+          "name": "Get Chapters - Non-existent Book",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3001/chapters/book/00000000-0000-0000-0000-000000000000",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["chapters", "book", "00000000-0000-0000-0000-000000000000"]
+            }
+          }
+        },
+        {
+          "name": "Create Chapter",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Chapter 1: The Beginning\",\n  \"content\": \"In the beginning, there was...\",\n  \"chapterNumber\": 1,\n  \"bookId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"type\": \"CHAPTER\",\n  \"order\": 0,\n  \"description\": \"Introduction to the story\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/chapters",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["chapters"]
+            }
+          }
+        },
+        {
+          "name": "Create Chapter 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Chapter 2: The Journey\",\n  \"content\": \"The hero begins the journey...\",\n  \"chapterNumber\": 2,\n  \"bookId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"type\": \"CHAPTER\",\n  \"order\": 1,\n  \"description\": \"Main story begins\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/chapters",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["chapters"]
+            }
+          }
+        },
+        {
+          "name": "Create Epilogue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Epilogue\",\n  \"content\": \"Years have passed...\",\n  \"chapterNumber\": 3,\n  \"bookId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"type\": \"EPILOGUE\",\n  \"order\": 2,\n  \"description\": \"Story conclusion\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/chapters",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["chapters"]
+            }
+          }
+        },
+        {
+          "name": "Update Chapter",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Chapter 1: The Beginning (Updated)\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/chapters/550e8400-e29b-41d4-a716-446655440001",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["chapters", "550e8400-e29b-41d4-a716-446655440001"]
+            }
+          }
+        },
+        {
+          "name": "Delete Chapter",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3001/chapters/550e8400-e29b-41d4-a716-446655440001",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["chapters", "550e8400-e29b-41d4-a716-446655440001"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

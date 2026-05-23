@@ -1,13 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Chapter } from './entities/chapter.entity';
 import { ChaptersService } from './chapters.service';
 import { ChaptersController } from './chapters.controller';
+import { Chapter } from './entities/chapter.entity';
 import { Book } from '../books/book.entity';
-import { ReadingProgress } from '../reading-progress/reading-progress.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Chapter, Book, ReadingProgress])],
+  imports: [TypeOrmModule.forFeature([Chapter, Book])],
   controllers: [ChaptersController],
   providers: [ChaptersService],
   exports: [ChaptersService],

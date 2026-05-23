@@ -1,103 +1,313 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Chapter } from './entities/chapter.entity';
 import { Book } from '../books/book.entity';
-import { CreateChapterDto } from './dto/create-chapter.dto';
-import { ReadingProgress } from '../reading-progress/reading-progress.entity';
+import { CreateChapterDto, UpdateChapterDto, ChapterResponseDto, ChapterContentDto } from './dto';
 
 @Injectable()
 export class ChaptersService {
   constructor(
     @InjectRepository(Chapter)
-    private readonly chaptersRepository: Repository<Chapter>,
+    private chaptersRepo: Repository<Chapter>,
 
     @InjectRepository(Book)
-    private readonly booksRepository: Repository<Book>,
-
-    @InjectRepository(ReadingProgress)
-    private readonly progressRepository: Repository<ReadingProgress>,
+    private booksRepo: Repository<Book>,
   ) {}
 
-  async findAll(bookId: string) {
-    return this.chaptersRepository.find({
-      where: { book: { id: bookId } },
-      order: { chapterNumber: 'ASC' },
-    });
-  }
-
-  async findOne(id: string) {
-    const chapter = await this.chaptersRepository.findOne({
-      where: { id },
-    });
-
-    if (!chapter) {
-      throw new NotFoundException('Chapter not found');
+  /**
+   * Get all chapters for a specific book
+   * @param bookId - UUID of the book
+   * @returns Array of chapters sorted by chapter number and order, or empty array if book exists but has no chapters
+   * @throws NotFoundException if book doesn't exist
+   * @throws BadRequestException if bookId is invalid
+   */
+  async getChaptersByBookId(bookId: string): Promise<ChapterResponseDto[]> {
+    // Validate bookId format (basic UUID validation)
+    if (!bookId || typeof bookId !== 'string' || bookId.trim() === '') {
+      throw new BadRequestException('Invalid book ID format');
     }
 
-    return chapter;
+    // Check if book exists
+    const book = await this.booksRepo.findOne({
+      where: { id: bookId },
+    });
+
+    if (!book) {
+      throw new NotFoundException(`Book with ID ${bookId} not found`);
+    }
+
+    // Fetch chapters for the book, sorted by order and chapter number
+    const chapters = await this.chaptersRepo.find({
+      where: { bookId },
+      order: {
+        order: 'ASC',
+        chapterNumber: 'ASC',
+        createdAt: 'ASC',
+      },
+    });
+
+    // Map to response DTO and return (can be empty array)
+    return chapters.map((chapter) => this.mapToResponseDto(chapter));
   }
 
-  async create(dto: CreateChapterDto) {
-    const book = await this.booksRepository.findOne({
+  /**
+   * Create a new chapter for a book
+   */
+  async create(dto: CreateChapterDto): Promise<ChapterResponseDto> {
+    // Validate book exists
+    const book = await this.booksRepo.findOne({
       where: { id: dto.bookId },
     });
 
     if (!book) {
-      throw new NotFoundException('Book not found');
+      throw new NotFoundException(`Book with ID ${dto.bookId} not found`);
     }
 
-    const chapter = this.chaptersRepository.create({
-      title: dto.title,
-      content: dto.content,
-      chapterNumber: dto.chapterNumber,
-      book,
+    // Check for duplicate chapter number in the same book
+    const existingChapter = await this.chaptersRepo.findOne({
+      where: {
+        bookId: dto.bookId,
+        chapterNumber: dto.chapterNumber,
+      },
     });
 
-    const saved = await this.chaptersRepository.save(chapter);
+    if (existingChapter) {
+      throw new BadRequestException(
+        `Chapter ${dto.chapterNumber} already exists for this book`,
+      );
+    }
 
-    await this.recalculateProgress(dto.bookId);
+    const chapter = this.chaptersRepo.create(dto);
+    const savedChapter = await this.chaptersRepo.save(chapter);
 
-    return saved;
+    return this.mapToResponseDto(savedChapter);
   }
 
-  async remove(id: string) {
-    const chapter = await this.chaptersRepository.findOne({
+  /**
+   * Update an existing chapter
+   */
+  async update(id: string, dto: UpdateChapterDto): Promise<ChapterResponseDto> {
+    const chapter = await this.chaptersRepo.findOne({
       where: { id },
-      relations: ['book'],
     });
 
     if (!chapter) {
-      throw new NotFoundException('Chapter not found');
+      throw new NotFoundException(`Chapter with ID ${id} not found`);
     }
 
-    const bookId = chapter.book.id;
-    await this.chaptersRepository.remove(chapter);
-    await this.recalculateProgress(bookId);
-  }
+    // If updating chapter number, check for duplicates in the same book
+    if (
+      dto.chapterNumber &&
+      dto.chapterNumber !== chapter.chapterNumber
+    ) {
+      const existingChapter = await this.chaptersRepo.findOne({
+        where: {
+          bookId: chapter.bookId,
+          chapterNumber: dto.chapterNumber,
+        },
+      });
 
-  private async recalculateProgress(bookId: string) {
-    const totalChapters = await this.chaptersRepository.count({
-      where: { book: { id: bookId } },
-    });
-
-    const progresses = await this.progressRepository.find({
-      where: { book: { id: bookId } },
-      relations: ['chapter'],
-    });
-
-    for (const p of progresses) {
-      if (p.chapter) {
-        p.percentageCompleted = Math.round(
-          (p.chapter.chapterNumber / totalChapters) * 100,
+      if (existingChapter) {
+        throw new BadRequestException(
+          `Chapter ${dto.chapterNumber} already exists for this book`,
         );
-      } else {
-        p.percentageCompleted = 0;
       }
     }
 
-    if (progresses.length) {
-      await this.progressRepository.save(progresses);
+    Object.assign(chapter, dto);
+    const updatedChapter = await this.chaptersRepo.save(chapter);
+
+    return this.mapToResponseDto(updatedChapter);
+  }
+
+  /**
+   * Delete a chapter
+   */
+  async delete(id: string): Promise<{ success: boolean; message: string }> {
+    const chapter = await this.chaptersRepo.findOne({
+      where: { id },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with ID ${id} not found`);
     }
+
+    await this.chaptersRepo.remove(chapter);
+
+    return {
+      success: true,
+      message: 'Chapter deleted successfully',
+    };
+  }
+
+  /**
+   * Map Chapter entity to response DTO
+   */
+  private mapToResponseDto(chapter: Chapter): ChapterResponseDto {
+    return {
+      id: chapter.id,
+      title: chapter.title,
+      chapterNumber: chapter.chapterNumber,
+      order: chapter.order,
+      type: chapter.type,
+      description: chapter.description,
+      createdAt: chapter.createdAt,
+      updatedAt: chapter.updatedAt,
+    };
+  }
+
+  /**
+   * Get full content for a single chapter
+   * Validates chapter ID, loads content, and calculates metadata
+   *
+   * @param chapterId - UUID of the chapter
+   * @returns Full chapter content with metadata (word count, reading time)
+   * @throws NotFoundException if chapter doesn't exist
+   * @throws BadRequestException if chapter ID is invalid
+   */
+  async getChapterContent(chapterId: string): Promise<ChapterContentDto> {
+    // Validate chapter ID format
+    if (!chapterId || typeof chapterId !== 'string' || chapterId.trim() === '') {
+      throw new BadRequestException('Invalid chapter ID format');
+    }
+
+    // Query for chapter - will be null if not found
+    const chapter = await this.chaptersRepo.findOne({
+      where: { id: chapterId },
+      relations: ['book'],
+    });
+
+    // Handle chapter not found
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with ID ${chapterId} not found`);
+    }
+
+    // Calculate word count from content
+    const wordCount = this.calculateWordCount(chapter.content);
+
+    // Calculate reading time (average reading speed: 200-250 words per minute)
+    const readingTimeMinutes = Math.ceil(wordCount / 225);
+
+    // Format and return chapter content
+    return this.mapToContentDto(chapter, wordCount, readingTimeMinutes);
+  }
+
+  /**
+   * Calculate word count from content text
+   * Handles various text formats and edge cases
+   *
+   * @param content - The content text to analyze
+   * @returns Total number of words
+   */
+  private calculateWordCount(content: string): number {
+    if (!content) {
+      return 0;
+    }
+
+    // Split by whitespace and filter out empty strings
+    const words = content
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0);
+
+    return words.length;
+  }
+
+  /**
+   * Map Chapter entity to content DTO with metadata
+   *
+   * @param chapter - The chapter entity
+   * @param wordCount - Calculated word count
+   * @param readingTimeMinutes - Calculated reading time
+   * @returns Formatted chapter content DTO
+   */
+  private mapToContentDto(
+    chapter: Chapter,
+    wordCount: number,
+    readingTimeMinutes: number,
+  ): ChapterContentDto {
+    return {
+      id: chapter.id,
+      title: chapter.title,
+      content: chapter.content,
+      chapterNumber: chapter.chapterNumber,
+      order: chapter.order,
+      type: chapter.type,
+      description: chapter.description,
+      bookId: chapter.bookId,
+      createdAt: chapter.createdAt,
+      updatedAt: chapter.updatedAt,
+      wordCount,
+      readingTimeMinutes,
+    };
   }
 }
+
+//   async create(dto: CreateChapterDto) {
+//     const book = await this.booksRepository.findOne({
+//       where: { id: dto.bookId },
+//     });
+
+//     if (!book) {
+//       throw new NotFoundException('Book not found');
+//     }
+
+//     const chapter = this.chaptersRepository.create({
+//       title: dto.title,
+//       content: dto.content,
+//       chapterNumber: dto.chapterNumber,
+//       book,
+//     });
+
+//     const saved = await this.chaptersRepository.save(chapter);
+
+//     await this.recalculateProgress(dto.bookId);
+
+//     return saved;
+//   }
+
+//   async remove(id: string) {
+//     const chapter = await this.chaptersRepository.findOne({
+//       where: { id },
+//       relations: ['book'],
+//     });
+
+//     if (!chapter) {
+//       throw new NotFoundException('Chapter not found');
+//     }
+
+//     const bookId = chapter.book.id;
+//     await this.chaptersRepository.remove(chapter);
+//     await this.recalculateProgress(bookId);
+//   }
+
+//   private async recalculateProgress(bookId: string) {
+//     const totalChapters = await this.chaptersRepository.count({
+//       where: { book: { id: bookId } },
+//     });
+
+//     const progresses = await this.progressRepository.find({
+//       where: { book: { id: bookId } },
+//       relations: ['chapter'],
+//     });
+
+//     for (const p of progresses) {
+//       if (p.chapter) {
+//         p.percentageCompleted = Math.round(
+//           (p.chapter.chapterNumber / totalChapters) * 100,
+//         );
+//       } else {
+//         p.percentageCompleted = 0;
+//       }
+//     }
+
+//     if (progresses.length) {
+//       await this.progressRepository.save(progresses);
+//     }
+//   }
+// }
