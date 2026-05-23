@@ -26,6 +26,9 @@ export class Book {
   @Column('text', { nullable: true, default: '' })
   content!: string;
 
+  @Column({ nullable: true, default: null })
+  coverImage?: string;
+
     @Column({
         type: 'enum',
         enum: BookStatus,

@@ -209,4 +209,78 @@ export class BooksService {
             }
         }
     }
+
+    /**
+     * Get search suggestions for autocomplete
+     * @param query - Search query string
+     * @param limit - Maximum number of suggestions per category (default: 10)
+     * @returns Object with books and authors suggestions
+     */
+    async getSearchSuggestions(query: string, limit: number = 10) {
+        if (!query || query.trim() === '') {
+            return {
+                books: [],
+                authors: [],
+                categories: [],
+            };
+        }
+
+        const searchTerm = `%${query}%`;
+
+        // Get unique authors from books matching the query
+        const authorQuery = this.repo
+            .createQueryBuilder('book')
+            .select('DISTINCT author.id', 'id')
+            .addSelect('author.name', 'name')
+            .leftJoin('book.author', 'author')
+            .where('book.title ILIKE :searchTerm', { searchTerm })
+            .orWhere('book.content ILIKE :searchTerm', { searchTerm })
+            .orWhere('author.name ILIKE :searchTerm', { searchTerm })
+            .limit(limit);
+
+        // Get books matching the query
+        const books = await this.repo
+            .createQueryBuilder('book')
+            .leftJoinAndSelect('book.author', 'author')
+            .where('book.title ILIKE :searchTerm', { searchTerm })
+            .orWhere('book.content ILIKE :searchTerm', { searchTerm })
+            .orWhere('author.name ILIKE :searchTerm', { searchTerm })
+            .orderBy('book.title', 'ASC')
+            .limit(limit)
+            .getMany();
+
+        // Get unique authors
+        const authors = await authorQuery.getRawMany();
+
+        // Get categories matching the query
+        const categories = await this.categoryRepo
+            .createQueryBuilder('category')
+            .where('category.name ILIKE :searchTerm', { searchTerm })
+            .orWhere('category.slug ILIKE :searchTerm', { searchTerm })
+            .limit(limit)
+            .getMany();
+
+        return {
+            books: books.map((book) => ({
+                id: book.id,
+                title: book.title,
+                coverImage: book.coverImage || null,
+                author: {
+                    id: book.author.id,
+                    name: book.author.name,
+                },
+            })),
+            authors: authors.map((author) => ({
+                id: author.id,
+                author: {
+                    id: author.id,
+                    name: author.name,
+                },
+            })),
+            categories: categories.map((category) => ({
+                id: category.id,
+                name: category.name,
+            })),
+        };
+    }
 }
