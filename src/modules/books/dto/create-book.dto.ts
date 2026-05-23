@@ -1,13 +1,17 @@
 import { IsArray, IsOptional, IsString } from 'class-validator';
 
 export class CreateBookDto {
-    @IsString()
-    title!: string;
+  @IsString()
+  title!: string;
 
-    @IsString()
-    content!: string;
+  @IsString()
+  content!: string;
 
-    @IsOptional()
-    @IsArray()
-    categorySlugs?: string[];
+  @IsOptional()
+  @IsArray()
+  categorySlugs?: string[];
+
+  @IsOptional()
+  @IsString()
+  coverImageUrl?: string;
 }
