@@ -15,8 +15,9 @@ import { User } from '../users/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BookStatus } from 'src/common/enums/book-status.enum';
 import { NotificationType } from '../notifications/notification.entity';
+import { GetBooksDto } from './dto/get-books.dto';
 
-// const MAX_FREE_BOOKS = 5;
+const MAX_FREE_BOOKS = 5;
 
 @Injectable()
 export class BooksService {
@@ -33,11 +34,43 @@ export class BooksService {
     private notificationsService: NotificationsService,
   ) {}
 
-  findAll() {
-    return this.repo.find({
-      relations: ['author'],
-      order: { createdAt: 'DESC' },
+  async findAll(query: GetBooksDto) {
+    // Extract values with fallbacks
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC',
+    } = query;
+    // Calulate how many records to skip
+    const skip = (page - 1) * limit;
+
+    // Query "Free Books" (Punlished status) and get total count
+    const [books, total] = await this.repo.findAndCount({
+      where: { status: BookStatus.PUBLISHED },
+      relations: ['author', 'categories'],
+      order: { [sortBy]: sortOrder },
+      skip: skip,
+      take: limit,
     });
+
+    return {
+      data: books.map((book) => ({
+        id: book.id,
+        title: book.title,
+        authurName: book.author ? book.author.name || 'Unkwown' : 'Unknown',
+        description: book.content ? book.content.substring(0, 100) + '...' : '',
+        converImageUrl: book.coverImageUrl,
+        genres: book.categories,
+        createdAt: book.createdAt,
+      })),
+      meta: {
+        totalItems: total,
+        itemPerPage: limit,
+        currentPAge: page,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findOne(id: string) {
@@ -82,13 +115,13 @@ export class BooksService {
       });
     }
 
-        const book = this.repo.create({
-            title: dto.title,
-            content: dto.content,
-            author: { id: user.id },
-            categories,
-            status: BookStatus.DRAFT,
-        });
+    const book = this.repo.create({
+      title: dto.title,
+      content: dto.content,
+      author: { id: user.id },
+      categories,
+      status: BookStatus.DRAFT,
+    });
 
     const savedBook = await this.repo.save(book);
 
