@@ -12,7 +12,12 @@ import {
 } from '@nestjs/common';
 import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { ChaptersService } from './chapters.service';
-import { CreateChapterDto, UpdateChapterDto, ChapterResponseDto, ChapterContentDto } from './dto';
+import {
+  CreateChapterDto,
+  UpdateChapterDto,
+  ChapterResponseDto,
+  ChapterContentDto,
+} from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 /**
@@ -89,9 +94,7 @@ export class ChaptersController {
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(3600) // Cache for 1 hour
   @Get(':id/content')
-  async getChapterContent(
-    @Param('id') id: string,
-  ): Promise<ChapterContentDto> {
+  async getChapterContent(@Param('id') id: string): Promise<ChapterContentDto> {
     return this.chaptersService.getChapterContent(id);
   }
 
