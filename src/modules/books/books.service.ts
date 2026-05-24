@@ -62,15 +62,15 @@ export class BooksService {
         if (search?.trim()) {
             query.andWhere(
                 `
-                to_tsvector(
-                    'english',
-                    coalesce(book.title, '') || ' ' ||
-                    coalesce(book.content, '') || ' ' ||
-                    coalesce(author.name, '')
+                (
+                    LOWER(book.title) LIKE LOWER(:search)
+                    OR LOWER(book.content) LIKE LOWER(:search)
+                    OR LOWER(author.name) LIKE LOWER(:search)
                 )
-                @@ plainto_tsquery('english', :search)
                 `,
-                { search },
+                {
+                    search: `%${search}%`,
+                },
             );
         }
 
