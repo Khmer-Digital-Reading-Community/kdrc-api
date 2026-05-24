@@ -75,6 +75,9 @@ export class Chapter {
   @OneToMany(() => Comment, (comment) => comment.chapter)
   comments!: Comment[];
 
+  @Column({ type: 'int', default: 0 })
+  wordCount!: number;
+
   @CreateDateColumn()
   createdAt!: Date;
 

@@ -28,6 +28,10 @@ export class CreateBookDto {
   tagSlugs?: string[];
 
   @IsOptional()
+  @IsString()
+  tableOfContents?: string;
+
+  @IsOptional()
   @Type(() => CreateBookMetadataDto)
   metadata?: CreateBookMetadataDto;
 }

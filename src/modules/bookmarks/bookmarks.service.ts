@@ -1,14 +1,32 @@
-import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  BadRequestException,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { Bookmark, BookmarkType } from './bookmark.entity';
 
 @Injectable()
-export class BookmarksService {
+export class BookmarksService implements OnModuleInit {
   constructor(
     @InjectRepository(Bookmark)
     private readonly bookmarkRepo: Repository<Bookmark>,
   ) {}
+
+  async onModuleInit() {
+    await this.bookmarkRepo.update(
+      { type: IsNull(), bookId: Not(IsNull()) },
+      { type: BookmarkType.BOOK },
+    );
+
+    await this.bookmarkRepo.update(
+      { type: IsNull(), chapterId: Not(IsNull()) },
+      { type: BookmarkType.CHAPTER },
+    );
+  }
 
   async addBookmark(userId: string, type: BookmarkType, targetId: string) {
     // 1. Validate inputs based on incoming structural type
@@ -21,7 +39,9 @@ export class BookmarksService {
       saveData.chapterId = targetId;
       saveData.bookId = undefined;
     } else {
-      throw new BadRequestException('Invalid bookmark type. Must be BOOK or CHAPTER.');
+      throw new BadRequestException(
+        'Invalid bookmark type. Must be BOOK or CHAPTER.',
+      );
     }
 
     try {
@@ -31,11 +51,15 @@ export class BookmarksService {
     } catch (error: any) {
       // 3. PostgreSQL unique violation error handler (Code: 23505)
       if (error.code === '23505') {
-        throw new ConflictException(`This ${type.toLowerCase()} is already bookmarked.`);
+        throw new ConflictException(
+          `This ${type.toLowerCase()} is already bookmarked.`,
+        );
       }
       // Foreign key violation if target object doesn't exist (Code: 23503)
       if (error.code === '23503') {
-        throw new NotFoundException(`The target ${type.toLowerCase()} item does not exist.`);
+        throw new NotFoundException(
+          `The target ${type.toLowerCase()} item does not exist.`,
+        );
       }
       throw error;
     }
@@ -60,11 +84,13 @@ export class BookmarksService {
 
     // Direct database wipe command (Highly performant block query!)
     const result = await this.bookmarkRepo.delete(lookupCriteria);
-    
+
     if (result.affected === 0) {
       throw new NotFoundException('Bookmark not found in your collection.');
     }
 
-    return { message: `Successfully removed ${type.toLowerCase()} from bookmarks.` };
+    return {
+      message: `Successfully removed ${type.toLowerCase()} from bookmarks.`,
+    };
   }
 }

@@ -52,7 +52,7 @@ export class BooksService {
   findAll() {
     return this.repo.find({
       where: { status: BookStatus.PUBLISHED },
-      relations: ['author', 'categories', 'genre', 'tags', 'metadata', 'reviews', 'reviews.reviewer'],
+      relations: ['author', 'categories', 'genre', 'tags', 'metadata', 'reviews', 'reviews.reviewer', 'chapters'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -81,12 +81,40 @@ export class BooksService {
     return book;
   }
 
-  findAuthorBooks(userId: string) {
-    return this.repo.find({
+  async findOneBasic(id: string) {
+    const book = await this.repo.findOne({
+      where: { id },
+      select: ['id', 'title', 'coverImageUrl', 'status', 'description'],
+    });
+    if (!book) {
+      throw new NotFoundException(`Book with ID ${id} not found`);
+    }
+    return book;
+  }
+
+  async findAuthorBooks(userId: string) {
+    const books = await this.repo.find({
       where: { author: { id: userId } },
-      relations: ['genre', 'categories', 'tags', 'metadata'],
+      relations: ['genre', 'categories', 'tags', 'metadata', 'chapters'],
       order: { updatedAt: 'DESC' },
     });
+
+    // Ensure wordCount is populated for chapters (legacy data fallback)
+    books.forEach(book => {
+      if (book.chapters) {
+        book.chapters.forEach(chapter => {
+          if (!chapter.wordCount && chapter.content) {
+            const plainText = (chapter.content || '')
+              .replace(/<[^>]*>/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            chapter.wordCount = plainText.split(' ').filter(w => w.length > 0).length;
+          }
+        });
+      }
+    });
+
+    return books;
   }
 
   async getAuthorStats(userId: string) {

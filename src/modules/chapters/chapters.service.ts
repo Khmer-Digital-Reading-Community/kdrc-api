@@ -94,6 +94,7 @@ export class ChaptersService {
     }
 
     const chapter = this.chaptersRepo.create(dto);
+    chapter.wordCount = this.calculateWordCount(dto.content || '');
     const savedChapter = await this.chaptersRepo.save(chapter);
 
     return this.mapToResponseDto(savedChapter);
@@ -138,6 +139,9 @@ export class ChaptersService {
     }
 
     Object.assign(chapter, dto);
+    if (dto.content !== undefined) {
+      chapter.wordCount = this.calculateWordCount(dto.content);
+    }
     const updatedChapter = await this.chaptersRepo.save(chapter);
 
     return this.mapToResponseDto(updatedChapter);
@@ -176,8 +180,6 @@ export class ChaptersService {
    * Map Chapter entity to response DTO
    */
   private mapToResponseDto(chapter: Chapter): ChapterResponseDto {
-    const wordCount = this.calculateWordCount(chapter.content || '');
-
     return {
       id: chapter.id,
       title: chapter.title,
@@ -186,7 +188,7 @@ export class ChaptersService {
       type: chapter.type,
       status: chapter.status,
       description: chapter.description,
-      wordCount,
+      wordCount: chapter.wordCount,
       createdAt: chapter.createdAt,
       updatedAt: chapter.updatedAt,
     };
@@ -244,11 +246,13 @@ export class ChaptersService {
       return 0;
     }
 
-    // Split by whitespace and filter out empty strings
-    const words = content
-      .trim()
-      .split(/\s+/)
-      .filter((word) => word.length > 0);
+    // Strip HTML tags and normalize whitespace
+    const plainText = content
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const words = plainText.split(' ').filter((word) => word.length > 0);
 
     return words.length;
   }
@@ -278,7 +282,7 @@ export class ChaptersService {
       bookId: chapter.bookId,
       createdAt: chapter.createdAt,
       updatedAt: chapter.updatedAt,
-      wordCount,
+      wordCount: chapter.wordCount,
       readingTimeMinutes,
     };
   }

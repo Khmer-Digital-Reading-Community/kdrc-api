@@ -50,6 +50,11 @@ export class BooksController {
     return this.booksService.findOne(id);
   }
 
+  @Get(':id/basic')
+  findOneBasic(@Param('id') id: string) {
+    return this.booksService.findOneBasic(id);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post()
   create(@Body() dto: CreateBookDto, @Req() req) {
