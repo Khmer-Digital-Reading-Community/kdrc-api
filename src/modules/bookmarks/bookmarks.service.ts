@@ -1,96 +1,52 @@
-import {
-  Injectable,
-  ConflictException,
-  BadRequestException,
-  NotFoundException,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Not, Repository } from 'typeorm';
-import { Bookmark, BookmarkType } from './bookmark.entity';
+import { Repository } from 'typeorm';
+import { Bookmark } from './bookmark.entity';
 
 @Injectable()
-export class BookmarksService implements OnModuleInit {
+export class BookmarksService {
   constructor(
     @InjectRepository(Bookmark)
     private readonly bookmarkRepo: Repository<Bookmark>,
   ) {}
 
-  async onModuleInit() {
-    await this.bookmarkRepo.update(
-      { type: IsNull(), bookId: Not(IsNull()) },
-      { type: BookmarkType.BOOK },
-    );
-
-    await this.bookmarkRepo.update(
-      { type: IsNull(), chapterId: Not(IsNull()) },
-      { type: BookmarkType.CHAPTER },
-    );
-  }
-
-  async addBookmark(userId: string, type: BookmarkType, targetId: string) {
-    // 1. Validate inputs based on incoming structural type
-    const saveData: Partial<Bookmark> = { userId, type };
-
-    if (type === BookmarkType.BOOK) {
-      saveData.bookId = targetId;
-      saveData.chapterId = undefined; // Force explicit empty state
-    } else if (type === BookmarkType.CHAPTER) {
-      saveData.chapterId = targetId;
-      saveData.bookId = undefined;
-    } else {
-      throw new BadRequestException(
-        'Invalid bookmark type. Must be BOOK or CHAPTER.',
-      );
-    }
-
+async addFavorite(userId: string, bookId: string) {
     try {
-      // 2. Fire save execution straight to PostgreSQL
-      const bookmark = this.bookmarkRepo.create(saveData);
+      const bookmark = this.bookmarkRepo.create({ userId, bookId });
       return await this.bookmarkRepo.save(bookmark);
-    } catch (error: any) {
-      // 3. PostgreSQL unique violation error handler (Code: 23505)
+    } catch (error) {
+      // 1. THIS IS OUR DETECTIVE: It will print the real error in your ThinkPad terminal
+      console.error('--- DATABASE ERROR DETECTED ---');
+      console.error('Code:', error.code);
+      console.error('Detail:', error.detail);
+
+      // 2. Duplicate Bookmark (Unique Violation)
       if (error.code === '23505') {
-        throw new ConflictException(
-          `This ${type.toLowerCase()} is already bookmarked.`,
-        );
+        throw new ConflictException('This book is already in your favorites.');
       }
-      // Foreign key violation if target object doesn't exist (Code: 23503)
+      
+      // 3. Book doesn't exist (Foreign Key Violation)
       if (error.code === '23503') {
-        throw new NotFoundException(
-          `The target ${type.toLowerCase()} item does not exist.`,
-        );
+        throw new NotFoundException('The book you are trying to bookmark does not exist in the database.');
       }
+
       throw error;
     }
   }
 
-  async getMyBookmarks(userId: string) {
+  async getMyFavorites(userId: string) {
     return await this.bookmarkRepo.find({
       where: { userId },
-      relations: ['book', 'chapter'], // Automatically hooks up loaded entity relations
+      relations: ['book'], // This allows the frontend to see book titles/details
       order: { createdAt: 'DESC' },
     });
   }
 
-  async removeBookmark(userId: string, type: BookmarkType, targetId: string) {
-    const lookupCriteria: Record<string, any> = { userId, type };
-
-    if (type === BookmarkType.BOOK) {
-      lookupCriteria.bookId = targetId;
-    } else {
-      lookupCriteria.chapterId = targetId;
-    }
-
-    // Direct database wipe command (Highly performant block query!)
-    const result = await this.bookmarkRepo.delete(lookupCriteria);
-
+  async removeFavorite(userId: string, bookId: string) {
+    const result = await this.bookmarkRepo.delete({ userId, bookId });
     if (result.affected === 0) {
-      throw new NotFoundException('Bookmark not found in your collection.');
+      throw new NotFoundException('Bookmark not found in your favorites.');
     }
-
-    return {
-      message: `Successfully removed ${type.toLowerCase()} from bookmarks.`,
-    };
+    return { message: 'Successfully removed from favorites.' };
   }
 }

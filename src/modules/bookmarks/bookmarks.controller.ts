@@ -1,48 +1,25 @@
-import { Controller, Post, Get, Delete, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, UseGuards, Request } from '@nestjs/common';
 import { BookmarksService } from './bookmarks.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { BookmarkType } from './bookmark.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Adjust path if needed
 
 @Controller('bookmarks')
-@UseGuards(JwtAuthGuard) 
+@UseGuards(JwtAuthGuard)
 export class BookmarksController {
   constructor(private readonly bookmarksService: BookmarksService) {}
 
-
-  @Post()
-  async add(
-    @Query('type') type: BookmarkType,
-    @Query('targetId') targetId: string,
-    @Request() req,
-  ) {
-    this.validateQueryParams(type, targetId);
-    return this.bookmarksService.addBookmark(req.user.id, type, targetId);
+  @Post(':bookId')
+  async add(@Param('bookId') bookId: string, @Request() req) {
+    // NestJS Passport automatically maps the JWT 'sub' into req.user.id
+    return this.bookmarksService.addFavorite(req.user.id, bookId);
   }
 
-  // GET /bookmarks
   @Get()
   async list(@Request() req) {
-    return this.bookmarksService.getMyBookmarks(req.user.id);
+    return this.bookmarksService.getMyFavorites(req.user.id);
   }
 
-
-  @Delete()
-  async remove(
-    @Query('type') type: BookmarkType,
-    @Query('targetId') targetId: string,
-    @Request() req,
-  ) {
-    this.validateQueryParams(type, targetId);
-    return this.bookmarksService.removeBookmark(req.user.id, type, targetId);
-  }
-
-
-  private validateQueryParams(type: BookmarkType, targetId: string) {
-    if (!type || !targetId) {
-      throw new BadRequestException('Missing parameters. Both "type" and "targetId" are required.');
-    }
-    if (!Object.values(BookmarkType).includes(type)) {
-      throw new BadRequestException('Invalid type parameter value. Must be BOOK or CHAPTER.');
-    }
+  @Delete(':bookId')
+  async remove(@Param('bookId') bookId: string, @Request() req) {
+    return this.bookmarksService.removeFavorite(req.user.id, bookId);
   }
 }
