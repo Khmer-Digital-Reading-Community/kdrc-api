@@ -56,13 +56,16 @@ export class BooksService {
     const limitNumber = Number(queryDto.limit ?? '10');
     const skip = (pageNumber - 1) * limitNumber;
 
-    const query = this.createBaseBookQuery()
-      .skip(skip)
-      .take(limitNumber);
+    const query = this.createBaseBookQuery().skip(skip).take(limitNumber);
 
     this.applySearchFilter(query, queryDto.search);
     this.applyFacetFilters(query, queryDto);
-    this.applyOrdering(query, queryDto.sort, queryDto.order, !!queryDto.search?.trim());
+    this.applyOrdering(
+      query,
+      queryDto.sort,
+      queryDto.order,
+      !!queryDto.search?.trim(),
+    );
 
     const [data, total] = await query.getManyAndCount();
 
@@ -90,7 +93,9 @@ export class BooksService {
 
     if (book.chapters?.length) {
       book.chapters.sort((a, b) =>
-        a.order !== b.order ? a.order - b.order : a.chapterNumber - b.chapterNumber,
+        a.order !== b.order
+          ? a.order - b.order
+          : a.chapterNumber - b.chapterNumber,
       );
     }
 
@@ -128,7 +133,9 @@ export class BooksService {
               .replace(/<[^>]*>/g, ' ')
               .replace(/\s+/g, ' ')
               .trim();
-            chapter.wordCount = plainText.split(' ').filter((w) => w.length > 0).length;
+            chapter.wordCount = plainText
+              .split(' ')
+              .filter((w) => w.length > 0).length;
           }
         });
       }
@@ -144,7 +151,9 @@ export class BooksService {
     });
 
     const totalBooks = books.length;
-    const totalPublished = books.filter((book) => book.status === BookStatus.PUBLISHED).length;
+    const totalPublished = books.filter(
+      (book) => book.status === BookStatus.PUBLISHED,
+    ).length;
 
     let totalWords = 0;
     books.forEach((book) => {
@@ -225,7 +234,9 @@ export class BooksService {
     }
 
     const tags = dto.tagSlugs?.length
-      ? await Promise.all(dto.tagSlugs.map((slug) => this.tagService.getOrCreateBySlug(slug)))
+      ? await Promise.all(
+          dto.tagSlugs.map((slug) => this.tagService.getOrCreateBySlug(slug)),
+        )
       : [];
 
     const book = this.repo.create({
@@ -279,7 +290,11 @@ export class BooksService {
       throw new ForbiddenException('You cannot update this book');
     }
 
-    if (dto.coverImageUrl && book.coverImageUrl && dto.coverImageUrl !== book.coverImageUrl) {
+    if (
+      dto.coverImageUrl &&
+      book.coverImageUrl &&
+      dto.coverImageUrl !== book.coverImageUrl
+    ) {
       this.deleteOldCover(book.coverImageUrl).catch((err) => {
         console.error('Failed to delete old cover:', err);
       });
@@ -297,7 +312,9 @@ export class BooksService {
     }
 
     if (dto.tagSlugs) {
-      book.tags = await Promise.all(dto.tagSlugs.map((slug) => this.tagService.getOrCreateBySlug(slug)));
+      book.tags = await Promise.all(
+        dto.tagSlugs.map((slug) => this.tagService.getOrCreateBySlug(slug)),
+      );
     }
 
     const oldStatus = book.status;
@@ -321,7 +338,10 @@ export class BooksService {
       await this.metadataRepo.save(metadata);
     }
 
-    if (oldStatus !== BookStatus.PUBLISHED && updatedBook.status === BookStatus.PUBLISHED) {
+    if (
+      oldStatus !== BookStatus.PUBLISHED &&
+      updatedBook.status === BookStatus.PUBLISHED
+    ) {
       await this.notifyAllUsersAboutBookAvailable(updatedBook);
     }
 
@@ -433,7 +453,12 @@ export class BooksService {
     }
   }
 
-  private applyOrdering(query: any, sort?: string, order?: string, hasSearch = false) {
+  private applyOrdering(
+    query: any,
+    sort?: string,
+    order?: string,
+    hasSearch = false,
+  ) {
     const normalizedSort = this.normalizeSort(sort);
     const sortOrder = order?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
@@ -543,78 +568,78 @@ export class BooksService {
         console.error(`Failed to notify user ${user.id}:`, error);
       }
     }
+  }
 
-    /**
-     * Get search suggestions for autocomplete
-     * @param query - Search query string
-     * @param limit - Maximum number of suggestions per category (default: 10)
-     * @returns Object with books and authors suggestions
-     */
-    async getSearchSuggestions(query: string, limit: number = 10) {
-        if (!query || query.trim() === '') {
-            return {
-                books: [],
-                authors: [],
-                categories: [],
-            };
-        }
-
-        const searchTerm = `%${query}%`;
-
-        // Get unique authors from books matching the query
-        const authorQuery = this.repo
-            .createQueryBuilder('book')
-            .select('DISTINCT author.id', 'id')
-            .addSelect('author.name', 'name')
-            .leftJoin('book.author', 'author')
-            .where('book.title ILIKE :searchTerm', { searchTerm })
-            .orWhere('book.content ILIKE :searchTerm', { searchTerm })
-            .orWhere('author.name ILIKE :searchTerm', { searchTerm })
-            .limit(limit);
-
-        // Get books matching the query
-        const books = await this.repo
-            .createQueryBuilder('book')
-            .leftJoinAndSelect('book.author', 'author')
-            .where('book.title ILIKE :searchTerm', { searchTerm })
-            .orWhere('book.content ILIKE :searchTerm', { searchTerm })
-            .orWhere('author.name ILIKE :searchTerm', { searchTerm })
-            .orderBy('book.title', 'ASC')
-            .limit(limit)
-            .getMany();
-
-        // Get unique authors
-        const authors = await authorQuery.getRawMany();
-
-        // Get categories matching the query
-        const categories = await this.categoryRepo
-            .createQueryBuilder('category')
-            .where('category.name ILIKE :searchTerm', { searchTerm })
-            .orWhere('category.slug ILIKE :searchTerm', { searchTerm })
-            .limit(limit)
-            .getMany();
-
-        return {
-            books: books.map((book) => ({
-                id: book.id,
-                title: book.title,
-                coverImage: book.coverImage || null,
-                author: {
-                    id: book.author.id,
-                    name: book.author.name,
-                },
-            })),
-            authors: authors.map((author) => ({
-                id: author.id,
-                author: {
-                    id: author.id,
-                    name: author.name,
-                },
-            })),
-            categories: categories.map((category) => ({
-                id: category.id,
-                name: category.name,
-            })),
-        };
+  /**
+   * Get search suggestions for autocomplete
+   * @param query - Search query string
+   * @param limit - Maximum number of suggestions per category (default: 10)
+   * @returns Object with books and authors suggestions
+   */
+  async getSearchSuggestions(query: string, limit: number = 10) {
+    if (!query || query.trim() === '') {
+      return {
+        books: [],
+        authors: [],
+        categories: [],
+      };
     }
+
+    const searchTerm = `%${query}%`;
+
+    // Get unique authors from books matching the query
+    const authorQuery = this.repo
+      .createQueryBuilder('book')
+      .select('DISTINCT author.id', 'id')
+      .addSelect('author.name', 'name')
+      .leftJoin('book.author', 'author')
+      .where('book.title ILIKE :searchTerm', { searchTerm })
+      .orWhere('book.content ILIKE :searchTerm', { searchTerm })
+      .orWhere('author.name ILIKE :searchTerm', { searchTerm })
+      .limit(limit);
+
+    // Get books matching the query
+    const books = await this.repo
+      .createQueryBuilder('book')
+      .leftJoinAndSelect('book.author', 'author')
+      .where('book.title ILIKE :searchTerm', { searchTerm })
+      .orWhere('book.content ILIKE :searchTerm', { searchTerm })
+      .orWhere('author.name ILIKE :searchTerm', { searchTerm })
+      .orderBy('book.title', 'ASC')
+      .limit(limit)
+      .getMany();
+
+    // Get unique authors
+    const authors = await authorQuery.getRawMany();
+
+    // Get categories matching the query
+    const categories = await this.categoryRepo
+      .createQueryBuilder('category')
+      .where('category.name ILIKE :searchTerm', { searchTerm })
+      .orWhere('category.slug ILIKE :searchTerm', { searchTerm })
+      .limit(limit)
+      .getMany();
+
+    return {
+      books: books.map((b) => ({
+        id: b.id,
+        title: b.title,
+        coverImage: (b as any).coverImageUrl || null,
+        author: b.author
+          ? {
+              id: b.author.id,
+              name: b.author.name,
+            }
+          : null,
+      })),
+      authors: authors.map((a: any) => ({
+        id: a.id,
+        name: a.name,
+      })),
+      categories: categories.map((category) => ({
+        id: category.id,
+        name: category.name,
+      })),
+    };
+  }
 }
