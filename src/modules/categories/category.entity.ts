@@ -3,15 +3,15 @@ import { Book } from '../books/book.entity';
 
 @Entity()
 export class Category {
-    @PrimaryGeneratedColumn()
-    id!: number;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
-    @Column({ unique: true })
-    slug!: string;
+  @Column({ unique: true })
+  slug!: string;
 
-    @Column()
-    name!: string;
+  @Column()
+  name!: string;
 
-    @ManyToMany(() => Book, (book) => book.categories)
-    books!: Book[];
+  @ManyToMany(() => Book, (book) => book.categories)
+  books!: Book[];
 }

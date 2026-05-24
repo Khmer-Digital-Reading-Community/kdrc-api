@@ -1,0 +1,74 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { Book } from '../book.entity';
+
+export enum AgeRating {
+  G = 'G',
+  PG = 'PG',
+  PG_13 = 'PG-13',
+  R = 'R',
+  NC_17 = 'NC-17',
+}
+
+@Entity('book_metadata')
+export class BookMetadata {
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
+
+  @Column('uuid')
+  bookId!: string;
+
+  @OneToOne(() => Book, (book) => book.metadata, { onDelete: 'CASCADE' })
+  @JoinColumn()
+  book!: Book;
+
+  @Column({ nullable: true })
+  subtitle?: string;
+
+  @Column('text', { nullable: true })
+  authorBio?: string;
+
+  @Column({ nullable: true })
+  publisher?: string;
+
+  @Column('timestamp', { nullable: true })
+  publishedDate?: Date;
+
+  @Column('int', { nullable: true })
+  pageCount?: number;
+
+  @Column({ default: 'English' })
+  language!: string;
+
+  @Column({
+    type: 'enum',
+    enum: AgeRating,
+    nullable: true,
+  })
+  ageRating?: AgeRating;
+
+  @Column('simple-array', { nullable: true })
+  contentWarnings?: string[];
+
+  @Column({ nullable: true })
+  seriesName?: string;
+
+  @Column('int', { nullable: true })
+  seriesPosition?: number;
+
+  @Column('int', { default: 0 })
+  estimatedReadingTime!: number;
+
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
+}

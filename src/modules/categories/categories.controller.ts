@@ -8,17 +8,22 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 
 @Controller('categories')
 export class CategoriesController {
-    constructor(private service: CategoriesService) { }
+  constructor(private service: CategoriesService) {}
 
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN)
-    @Post()
-    create(@Body() dto: CreateCategoryDto) {
-        return this.service.create(dto.name);
-    }
+  @Get()
+  findAll() {
+    return this.service.findAll();
+  }
 
-    @Get(':slug')
-    findOne(@Param('slug') slug: string) {
-        return this.service.findBySlug(slug);
-    }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post()
+  create(@Body() dto: CreateCategoryDto) {
+    return this.service.create(dto.name);
+  }
+
+  @Get(':slug')
+  findOne(@Param('slug') slug: string) {
+    return this.service.findBySlug(slug);
+  }
 }

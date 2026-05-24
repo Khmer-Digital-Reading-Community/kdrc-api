@@ -29,6 +29,12 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   providerId?: string;
 
+  @Column({ nullable: true, type: 'text' })
+  bio?: string;
+
+  @Column({ nullable: true })
+  avatarUrl?: string;
+
   @Column({ nullable: true, select: false })
   refreshToken?: string;
 

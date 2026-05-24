@@ -18,36 +18,8 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
       - backend-net
-
-  db:
-    image: postgres:16-alpine
-    container_name: kdrc-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-kdrc_db}
-      POSTGRES_USER: ${POSTGRES_USER:-kdrc_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kdrc_password}
-    ports:
-      - 5433:5432
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kdrc_user} -d ${POSTGRES_DB:-kdrc_db}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 5s
-    networks:
-      - backend-net
-
-volumes:
-  postgres-data:
-    driver: local
 
 networks:
   backend-net:

@@ -1,4 +1,5 @@
 import { ChapterType } from 'src/common/enums/chapter-type.enum';
+import { ChapterStatus } from 'src/common/enums/chapter-status.enum';
 
 export class ChapterResponseDto {
   id!: string;
@@ -6,7 +7,9 @@ export class ChapterResponseDto {
   chapterNumber!: number;
   order!: number;
   type!: ChapterType;
+  status!: ChapterStatus;
   description?: string;
+  wordCount!: number;
   createdAt!: Date;
   updatedAt!: Date;
 }
