@@ -179,6 +179,7 @@ export class BooksService {
       return this.paginate([], 0, page, limit);
     }
 
+    const searchTerm = q.trim();
     const query = this.createBaseBookQuery()
       .andWhere(
         `
@@ -186,12 +187,10 @@ export class BooksService {
           'english',
           coalesce(book.title, '') || ' ' ||
           coalesce(book.description, '') || ' ' ||
-          coalesce(author.name, '') || ' ' ||
-          coalesce(genre.name, '') || ' ' ||
-          coalesce(category.name, '')
+          coalesce(author.name, '')
         ) @@ plainto_tsquery('english', :search)
         `,
-        { search: q.trim() },
+        { search: searchTerm },
       )
       .addSelect(
         `ts_rank(
@@ -199,9 +198,7 @@ export class BooksService {
             'english',
             coalesce(book.title, '') || ' ' ||
             coalesce(book.description, '') || ' ' ||
-            coalesce(author.name, '') || ' ' ||
-            coalesce(genre.name, '') || ' ' ||
-            coalesce(category.name, '')
+            coalesce(author.name, '')
           ),
           plainto_tsquery('english', :search)
         )`,
@@ -381,7 +378,6 @@ export class BooksService {
       .leftJoinAndSelect('book.author', 'author')
       .leftJoinAndSelect('book.genre', 'genre')
       .leftJoinAndSelect('book.categories', 'category')
-      .leftJoinAndSelect('book.metadata', 'metadata')
       .where('book.status = :status', {
         status: BookStatus.PUBLISHED,
       });
@@ -398,9 +394,7 @@ export class BooksService {
         'english',
         coalesce(book.title, '') || ' ' ||
         coalesce(book.description, '') || ' ' ||
-        coalesce(author.name, '') || ' ' ||
-        coalesce(genre.name, '') || ' ' ||
-        coalesce(category.name, '')
+        coalesce(author.name, '')
       ) @@ plainto_tsquery('english', :search)
       `,
       { search: search.trim() },
@@ -437,9 +431,11 @@ export class BooksService {
     }
 
     if (queryDto.language?.trim()) {
-      query.andWhere('LOWER(metadata.language) = LOWER(:language)', {
-        language: queryDto.language.trim(),
-      });
+      query
+        .leftJoin('book.metadata', 'metadata')
+        .andWhere('LOWER(metadata.language) = LOWER(:language)', {
+          language: queryDto.language.trim(),
+        });
     }
 
     if (queryDto.minRating) {

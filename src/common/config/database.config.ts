@@ -12,7 +12,6 @@ import { UserChallenge } from '../../modules/challenges/user-challenge.entity';
 import { Achievement } from '../../modules/achievements/achievement.entity';
 import { UserAchievement } from '../../modules/achievements/user-achievement.entity';
 import { ReadingProgress } from '../../modules/reading-progress/reading-progress.entity';
-import { ChapterType } from '../enums';
 import { Genre } from 'src/modules/genres/entities/genre.entity';
 import { Tag } from 'src/modules/tags/entities/tag.entity';
 import { BookMetadata } from 'src/modules/books/entities/book-metadata.entity';
@@ -44,12 +43,12 @@ export const databaseConfig: DataSourceOptions = {
     Tag,
     BookMetadata,
     Challenge,
-    UserChallenge, 
-    Achievement, 
-    UserAchievement, 
+    UserChallenge,
+    Achievement,
+    UserAchievement,
     ReadingProgress,
   ],
   synchronize: toBool(process.env.TYPEORM_SYNC, true),
-  migrations: ['dist/migrations/*.js'],
+  migrations: [__dirname + '/../../migrations/*{.ts,.js}'],
   migrationsRun: toBool(process.env.TYPEORM_MIGRATIONS_RUN, false),
 };
