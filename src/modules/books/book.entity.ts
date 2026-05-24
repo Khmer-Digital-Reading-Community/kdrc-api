@@ -8,9 +8,13 @@ import {
   ManyToMany,
   JoinTable,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Category } from '../categories/category.entity';
+import { Genre } from '../genres/entities/genre.entity';
+import { Tag } from '../tags/entities/tag.entity';
+import { BookMetadata } from './entities/book-metadata.entity';
 import { BookStatus } from 'src/common/enums/book-status.enum';
 import { Review } from '../reviews/review.entity';
 import { Chapter } from '../chapters/entities/chapter.entity';
@@ -23,29 +27,44 @@ export class Book {
   @Column()
   title!: string;
 
-  @Column('text')
-  content!: string;
+  @Column('text', { default: '' })
+  description!: string;
 
-    @Column({
-        type: 'enum',
-        enum: BookStatus,
-        default: BookStatus.DRAFT,
-    })
-    status!: BookStatus;
+  @Column({ nullable: true })
+  coverImageUrl?: string;
 
-    @ManyToOne(() => User, (user) => user.books, {
-        onDelete: 'CASCADE',
-    })
-    author!: User;
+  @Column({
+    type: 'enum',
+    enum: BookStatus,
+    default: BookStatus.DRAFT,
+  })
+  status!: BookStatus;
 
-    @OneToMany(() => Review, (review) => review.book)
-    reviews!: Review[];
+  @Column({
+    type: 'float',
+    default: 0,
+  })
+  rating!: number;
 
-    @CreateDateColumn()
-    createdAt!: Date;
+  @Column({ default: 0 })
+  readCount?: number;
 
-  @UpdateDateColumn()
-  updatedAt!: Date;
+  @Column({ default: 0 })
+  likeCount?: number;
+
+  @Column('text', { nullable: true })
+  tableOfContents?: string;
+
+  @ManyToOne(() => User, (user) => user.books, {
+    onDelete: 'CASCADE',
+  })
+  author!: User;
+
+  @ManyToOne(() => Genre, (genre) => genre.books, {
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
+  genre?: Genre;
 
   @ManyToMany(() => Category, (category) => category.books, {
     cascade: true,
@@ -53,6 +72,27 @@ export class Book {
   @JoinTable()
   categories!: Category[];
 
+  @ManyToMany(() => Tag, (tag) => tag.books, {
+    cascade: true,
+  })
+  @JoinTable()
+  tags!: Tag[];
+
+  @OneToOne(() => BookMetadata, (metadata) => metadata.book, {
+    cascade: true,
+    eager: true,
+  })
+  metadata?: BookMetadata;
+
+  @OneToMany(() => Review, (review) => review.book)
+  reviews!: Review[];
+
   @OneToMany(() => Chapter, (chapter) => chapter.book)
   chapters!: Chapter[];
+
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
 }
