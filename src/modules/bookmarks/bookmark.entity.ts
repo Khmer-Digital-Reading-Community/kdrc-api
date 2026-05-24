@@ -1,7 +1,7 @@
 import { Entity, ManyToOne, JoinColumn, Unique, Column } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entities';
 import { User } from '../users/user.entity';
-import { Book } from '../books/book.entity'; 
+import { Book } from '../books/book.entity';
 import { Chapter } from '../chapters/entities/chapter.entity';
 
 // Define the two types of things a user can bookmark
@@ -11,9 +11,8 @@ export enum BookmarkType {
 }
 
 @Entity('bookmarks')
-
-@Unique('UQ_USER_BOOK', ['userId', 'bookId'])     
-@Unique('UQ_USER_CHAPTER', ['userId', 'chapterId']) 
+@Unique('UQ_USER_BOOK', ['userId', 'bookId'])
+@Unique('UQ_USER_CHAPTER', ['userId', 'chapterId'])
 export class Bookmark extends BaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
@@ -21,13 +20,12 @@ export class Bookmark extends BaseEntity {
   @Column({
     type: 'enum',
     enum: BookmarkType,
+    default: BookmarkType.BOOK,
   })
   type!: BookmarkType;
 
-
   @Column({ type: 'uuid', nullable: true })
   bookId?: string;
-
 
   @Column({ type: 'uuid', nullable: true })
   chapterId?: string;
