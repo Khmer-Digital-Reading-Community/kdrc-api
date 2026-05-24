@@ -378,14 +378,10 @@ export class BooksService {
   private createBaseBookQuery() {
     return this.repo
       .createQueryBuilder('book')
-      .distinct(true)
       .leftJoinAndSelect('book.author', 'author')
       .leftJoinAndSelect('book.genre', 'genre')
       .leftJoinAndSelect('book.categories', 'category')
-      .leftJoinAndSelect('book.tags', 'tag')
       .leftJoinAndSelect('book.metadata', 'metadata')
-      .leftJoinAndSelect('book.reviews', 'reviews')
-      .leftJoinAndSelect('reviews.reviewer', 'reviewer')
       .where('book.status = :status', {
         status: BookStatus.PUBLISHED,
       });
@@ -594,7 +590,7 @@ export class BooksService {
       .addSelect('author.name', 'name')
       .leftJoin('book.author', 'author')
       .where('book.title ILIKE :searchTerm', { searchTerm })
-      .orWhere('book.content ILIKE :searchTerm', { searchTerm })
+      .orWhere('book.description ILIKE :searchTerm', { searchTerm })
       .orWhere('author.name ILIKE :searchTerm', { searchTerm })
       .limit(limit);
 
@@ -603,7 +599,7 @@ export class BooksService {
       .createQueryBuilder('book')
       .leftJoinAndSelect('book.author', 'author')
       .where('book.title ILIKE :searchTerm', { searchTerm })
-      .orWhere('book.content ILIKE :searchTerm', { searchTerm })
+      .orWhere('book.description ILIKE :searchTerm', { searchTerm })
       .orWhere('author.name ILIKE :searchTerm', { searchTerm })
       .orderBy('book.title', 'ASC')
       .limit(limit)
