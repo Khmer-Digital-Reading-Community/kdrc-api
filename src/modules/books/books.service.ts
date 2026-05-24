@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -9,6 +10,7 @@ import { In, Repository } from 'typeorm';
 import { Book } from './book.entity';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { QueryBooksDto } from './dto/query-books.dto';
 import { Role } from 'src/common/enums/role.enum';
 import { Category } from '../categories/category.entity';
 import { User } from '../users/user.entity';
@@ -49,12 +51,22 @@ export class BooksService {
     private tagService: TagService,
   ) {}
 
-  findAll() {
-    return this.repo.find({
-      where: { status: BookStatus.PUBLISHED },
-      relations: ['author', 'categories', 'genre', 'tags', 'metadata', 'reviews', 'reviews.reviewer', 'chapters'],
-      order: { createdAt: 'DESC' },
-    });
+  async findAll(queryDto: QueryBooksDto) {
+    const pageNumber = Number(queryDto.page ?? '1');
+    const limitNumber = Number(queryDto.limit ?? '10');
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const query = this.createBaseBookQuery()
+      .skip(skip)
+      .take(limitNumber);
+
+    this.applySearchFilter(query, queryDto.search);
+    this.applyFacetFilters(query, queryDto);
+    this.applyOrdering(query, queryDto.sort, queryDto.order, !!queryDto.search?.trim());
+
+    const [data, total] = await query.getManyAndCount();
+
+    return this.paginate(data, total, pageNumber, limitNumber);
   }
 
   async findOne(id: string) {
@@ -71,13 +83,20 @@ export class BooksService {
         'reviews.reviewer',
       ],
     });
-    if (book?.chapters?.length) {
+
+    if (!book) {
+      throw new NotFoundException('Book not found');
+    }
+
+    if (book.chapters?.length) {
       book.chapters.sort((a, b) =>
-        a.order !== b.order
-          ? a.order - b.order
-          : a.chapterNumber - b.chapterNumber,
+        a.order !== b.order ? a.order - b.order : a.chapterNumber - b.chapterNumber,
       );
     }
+
+    await this.repo.increment({ id }, 'readCount', 1);
+    book.readCount = (book.readCount || 0) + 1;
+
     return book;
   }
 
@@ -86,9 +105,11 @@ export class BooksService {
       where: { id },
       select: ['id', 'title', 'coverImageUrl', 'status', 'description'],
     });
+
     if (!book) {
       throw new NotFoundException(`Book with ID ${id} not found`);
     }
+
     return book;
   }
 
@@ -99,16 +120,15 @@ export class BooksService {
       order: { updatedAt: 'DESC' },
     });
 
-    // Ensure wordCount is populated for chapters (legacy data fallback)
-    books.forEach(book => {
+    books.forEach((book) => {
       if (book.chapters) {
-        book.chapters.forEach(chapter => {
+        book.chapters.forEach((chapter) => {
           if (!chapter.wordCount && chapter.content) {
             const plainText = (chapter.content || '')
               .replace(/<[^>]*>/g, ' ')
               .replace(/\s+/g, ' ')
               .trim();
-            chapter.wordCount = plainText.split(' ').filter(w => w.length > 0).length;
+            chapter.wordCount = plainText.split(' ').filter((w) => w.length > 0).length;
           }
         });
       }
@@ -124,13 +144,11 @@ export class BooksService {
     });
 
     const totalBooks = books.length;
-    const totalPublished = books.filter(
-      (b) => b.status === BookStatus.PUBLISHED,
-    ).length;
+    const totalPublished = books.filter((book) => book.status === BookStatus.PUBLISHED).length;
 
     let totalWords = 0;
     books.forEach((book) => {
-      book.chapters.forEach((chapter) => {
+      book.chapters?.forEach((chapter) => {
         totalWords += (chapter.content || '')
           .trim()
           .split(/\s+/)
@@ -145,6 +163,49 @@ export class BooksService {
       streakDays: 14,
       engagementRate: 12.4,
     };
+  }
+
+  async search(q: string, page = 1, limit = 10, sort?: string) {
+    if (!q || !q.trim()) {
+      return this.paginate([], 0, page, limit);
+    }
+
+    const query = this.createBaseBookQuery()
+      .andWhere(
+        `
+        to_tsvector(
+          'english',
+          coalesce(book.title, '') || ' ' ||
+          coalesce(book.description, '') || ' ' ||
+          coalesce(author.name, '') || ' ' ||
+          coalesce(genre.name, '') || ' ' ||
+          coalesce(category.name, '')
+        ) @@ plainto_tsquery('english', :search)
+        `,
+        { search: q.trim() },
+      )
+      .addSelect(
+        `ts_rank(
+          to_tsvector(
+            'english',
+            coalesce(book.title, '') || ' ' ||
+            coalesce(book.description, '') || ' ' ||
+            coalesce(author.name, '') || ' ' ||
+            coalesce(genre.name, '') || ' ' ||
+            coalesce(category.name, '')
+          ),
+          plainto_tsquery('english', :search)
+        )`,
+        'rank',
+      )
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    this.applyOrdering(query, sort, undefined, true);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return this.paginate(data, total, page, limit);
   }
 
   async create(dto: CreateBookDto, user: any) {
@@ -164,17 +225,14 @@ export class BooksService {
     }
 
     const tags = dto.tagSlugs?.length
-      ? await Promise.all(
-          dto.tagSlugs.map((slug) =>
-            this.tagService.getOrCreateBySlug(slug),
-          ),
-        )
+      ? await Promise.all(dto.tagSlugs.map((slug) => this.tagService.getOrCreateBySlug(slug)))
       : [];
 
     const book = this.repo.create({
       title: dto.title,
       description: dto.description,
       coverImageUrl: dto.coverImageUrl,
+      tableOfContents: dto.tableOfContents,
       author: { id: user.id },
       categories,
       genre,
@@ -184,7 +242,6 @@ export class BooksService {
 
     const savedBook = await this.repo.save(book);
 
-    // Create metadata if provided
     if (dto.metadata) {
       const metadata = this.metadataRepo.create({
         ...dto.metadata,
@@ -228,7 +285,6 @@ export class BooksService {
       });
     }
 
-    // Handle relationships
     if (dto.categorySlugs) {
       const categories = await this.categoryRepo.find({
         where: { slug: In(dto.categorySlugs) },
@@ -241,20 +297,18 @@ export class BooksService {
     }
 
     if (dto.tagSlugs) {
-      book.tags = await Promise.all(
-        dto.tagSlugs.map((slug) => this.tagService.getOrCreateBySlug(slug)),
-      );
+      book.tags = await Promise.all(dto.tagSlugs.map((slug) => this.tagService.getOrCreateBySlug(slug)));
     }
 
     const oldStatus = book.status;
     Object.assign(book, dto);
     const updatedBook = await this.repo.save(book);
 
-    // Update metadata if provided
     if (dto.metadata) {
       let metadata = await this.metadataRepo.findOne({
         where: { bookId: id },
       });
+
       if (!metadata) {
         metadata = this.metadataRepo.create({
           ...dto.metadata,
@@ -263,13 +317,11 @@ export class BooksService {
       } else {
         Object.assign(metadata, dto.metadata);
       }
+
       await this.metadataRepo.save(metadata);
     }
 
-    if (
-      oldStatus !== BookStatus.PUBLISHED &&
-      updatedBook.status === BookStatus.PUBLISHED
-    ) {
+    if (oldStatus !== BookStatus.PUBLISHED && updatedBook.status === BookStatus.PUBLISHED) {
       await this.notifyAllUsersAboutBookAvailable(updatedBook);
     }
 
@@ -301,6 +353,159 @@ export class BooksService {
 
     await this.repo.remove(book);
     return { message: 'Book deleted' };
+  }
+
+  private createBaseBookQuery() {
+    return this.repo
+      .createQueryBuilder('book')
+      .distinct(true)
+      .leftJoinAndSelect('book.author', 'author')
+      .leftJoinAndSelect('book.genre', 'genre')
+      .leftJoinAndSelect('book.categories', 'category')
+      .leftJoinAndSelect('book.tags', 'tag')
+      .leftJoinAndSelect('book.metadata', 'metadata')
+      .leftJoinAndSelect('book.reviews', 'reviews')
+      .leftJoinAndSelect('reviews.reviewer', 'reviewer')
+      .where('book.status = :status', {
+        status: BookStatus.PUBLISHED,
+      });
+  }
+
+  private applySearchFilter(query: any, search?: string) {
+    if (!search?.trim()) {
+      return;
+    }
+
+    query.andWhere(
+      `
+      to_tsvector(
+        'english',
+        coalesce(book.title, '') || ' ' ||
+        coalesce(book.description, '') || ' ' ||
+        coalesce(author.name, '') || ' ' ||
+        coalesce(genre.name, '') || ' ' ||
+        coalesce(category.name, '')
+      ) @@ plainto_tsquery('english', :search)
+      `,
+      { search: search.trim() },
+    );
+  }
+
+  private applyFacetFilters(query: any, queryDto: QueryBooksDto) {
+    const categoryValues = this.parseList(queryDto.category);
+    const genreValues = this.parseList(queryDto.genres ?? queryDto.genre);
+
+    if (categoryValues.length > 0) {
+      query.andWhere(
+        '(LOWER(category.slug) IN (:...categoryValues) OR LOWER(category.name) IN (:...categoryValues))',
+        { categoryValues },
+      );
+    }
+
+    if (genreValues.length > 0) {
+      query.andWhere(
+        '(LOWER(genre.slug) IN (:...genreValues) OR LOWER(genre.name) IN (:...genreValues))',
+        { genreValues },
+      );
+    }
+
+    if (queryDto.authors?.trim()) {
+      const authors = this.parseList(queryDto.authors);
+      if (authors.length > 0) {
+        query.andWhere('LOWER(author.name) IN (:...authors)', { authors });
+      }
+    } else if (queryDto.author?.trim()) {
+      query.andWhere('LOWER(author.name) LIKE LOWER(:author)', {
+        author: `%${queryDto.author.trim()}%`,
+      });
+    }
+
+    if (queryDto.language?.trim()) {
+      query.andWhere('LOWER(metadata.language) = LOWER(:language)', {
+        language: queryDto.language.trim(),
+      });
+    }
+
+    if (queryDto.minRating) {
+      query.andWhere('book.rating >= :minRating', {
+        minRating: Number(queryDto.minRating),
+      });
+    }
+  }
+
+  private applyOrdering(query: any, sort?: string, order?: string, hasSearch = false) {
+    const normalizedSort = this.normalizeSort(sort);
+    const sortOrder = order?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+    switch (normalizedSort) {
+      case 'popular':
+        query
+          .addSelect('book.readCount + (book.likeCount * 3)', 'popularityScore')
+          .orderBy('popularityScore', sortOrder);
+        break;
+      case 'trending':
+        query
+          .addSelect('book.readCount + (book.likeCount * 2)', 'trendingScore')
+          .orderBy('trendingScore', sortOrder);
+        break;
+      case 'rating':
+        query.orderBy('book.rating', sortOrder);
+        break;
+      case 'latest':
+        query.orderBy('book.createdAt', sortOrder);
+        break;
+      case 'oldest':
+        query.orderBy('book.createdAt', sortOrder);
+        break;
+      case 'likes':
+        query.orderBy('book.likeCount', sortOrder);
+        break;
+      case 'reads':
+        query.orderBy('book.readCount', sortOrder);
+        break;
+      case 'updated':
+        query.orderBy('book.updatedAt', sortOrder);
+        break;
+      default:
+        if (hasSearch) {
+          query.orderBy('rank', 'DESC').addOrderBy('book.createdAt', 'DESC');
+        } else {
+          query.orderBy('book.createdAt', 'DESC');
+        }
+        break;
+    }
+  }
+
+  private normalizeSort(sort?: string) {
+    if (!sort) {
+      return undefined;
+    }
+
+    if (sort === 'recent') {
+      return 'latest';
+    }
+
+    return sort;
+  }
+
+  private parseList(value?: string) {
+    return (value ?? '')
+      .split(',')
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean);
+  }
+
+  private paginate<T>(data: T[], total: number, page: number, limit: number) {
+    const pages = Math.ceil(total / limit);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      pages,
+      totalPages: pages,
+    };
   }
 
   private async deleteOldCover(imageUrl: string): Promise<void> {

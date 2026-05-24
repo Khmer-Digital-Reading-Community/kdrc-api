@@ -40,6 +40,18 @@ export class Book {
   })
   status!: BookStatus;
 
+  @Column({
+    type: 'float',
+    default: 0,
+  })
+  rating!: number;
+
+  @Column({ default: 0 })
+  readCount?: number;
+
+  @Column({ default: 0 })
+  likeCount?: number;
+
   @Column('text', { nullable: true })
   tableOfContents?: string;
 
