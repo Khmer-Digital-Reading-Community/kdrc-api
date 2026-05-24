@@ -8,8 +8,9 @@ export class UpsertProgressDto {
   @IsUUID()
   chapterId?: string;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100)
-  percentageCompleted!: number;
+  percentageCompleted?: number;
 }

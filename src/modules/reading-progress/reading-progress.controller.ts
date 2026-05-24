@@ -1,6 +1,7 @@
 import {
   Controller, Get, Post, Patch, Param, Body, Query,
   UseGuards, Req, ParseUUIDPipe,
+  Inject,
 } from '@nestjs/common';
 import { ReadingProgressService } from './reading-progress.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -9,6 +10,7 @@ import { UpsertProgressDto } from './dto/upsert-progress.dto';
 @Controller('reading-progress')
 export class ReadingProgressController {
   constructor(private service: ReadingProgressService) {}
+  
 
   @UseGuards(JwtAuthGuard)
   @Get()
