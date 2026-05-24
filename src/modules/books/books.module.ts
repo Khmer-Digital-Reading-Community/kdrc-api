@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BooksService } from './books.service';
 import { BooksController } from './books.controller';
+import { SearchController } from './search.controller';
 import { Book } from './book.entity';
 import { BookMetadata } from './entities/book-metadata.entity';
 import { Category } from '../categories/category.entity';
@@ -21,7 +22,7 @@ import { TagModule } from '../tags/tags.module';
         GenreModule,
         TagModule,
     ],
-    controllers: [BooksController],
+    controllers: [BooksController, SearchController],
     providers: [BooksService],
 })
 export class BooksModule { }
