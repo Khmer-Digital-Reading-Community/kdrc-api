@@ -13,6 +13,10 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ChaptersModule } from './modules/chapters/chapters.module';
 import { BookmarksModule } from './modules/bookmarks/bookmarks.module';
+import { ReadingProgressModule } from './modules/reading-progress/reading-progress.module';
+import { ChallengesModule } from './modules/challenges/challenges.module';
+import { AchievementsModule } from './modules/achievements/achievements.module';
+import { CommunityModule } from './modules/community/community.module';
 import { CommentsModule } from './modules/interactions/comments/comments.module';
 
 @Module({
@@ -33,6 +37,10 @@ import { CommentsModule } from './modules/interactions/comments/comments.module'
     ChaptersModule,
     ReviewsModule,
     BookmarksModule,
+    ReadingProgressModule,
+    ChallengesModule,
+    AchievementsModule,
+    CommunityModule,
     CommentsModule,
   ],
   controllers: [AppController],
