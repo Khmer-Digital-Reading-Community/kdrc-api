@@ -11,7 +11,8 @@ export enum BookmarkType {
 }
 
 @Entity('bookmarks')
-
+@Unique('UQ_USER_BOOK', ['userId', 'bookId'])
+@Unique('UQ_USER_CHAPTER', ['userId', 'chapterId'])
 export class Bookmark extends BaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
@@ -19,13 +20,12 @@ export class Bookmark extends BaseEntity {
   @Column({
     type: 'enum',
     enum: BookmarkType,
+    default: BookmarkType.BOOK,
   })
   type!: BookmarkType;
 
-
   @Column({ type: 'uuid', nullable: true })
   bookId?: string;
-
 
   @Column({ type: 'uuid', nullable: true })
   chapterId?: string;

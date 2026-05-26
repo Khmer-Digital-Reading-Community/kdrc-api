@@ -93,6 +93,53 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 - Website - [https://nestjs.com](https://nestjs.com/)
 - Twitter - [@nestframework](https://twitter.com/nestframework)
 
+## API Endpoints
+
+### Reading Progress
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/reading-progress` | JWT | Get the logged-in user's reading progress across all books |
+
+#### `GET /reading-progress`
+
+**Auth:** Requires `Authorization: Bearer <jwt>` header.
+
+**Response:** Array of reading progress records, sorted by `lastReadAt` descending (most recently active first).
+
+```json
+[
+  {
+    "id": "uuid",
+    "percentageCompleted": "45.50",
+    "lastReadAt": "2026-05-14T10:30:00.000Z",
+    "createdAt": "2026-05-10T08:00:00.000Z",
+    "updatedAt": "2026-05-14T10:30:00.000Z",
+    "book": {
+      "id": "uuid",
+      "title": "Book Title",
+      "content": "...",
+      "createdAt": "...",
+      "updatedAt": "..."
+    },
+    "chapter": {
+      "id": "uuid",
+      "title": "Chapter 5",
+      "chapterNumber": 5,
+      "chapterType": "CHAPTER",
+      "createdAt": "...",
+      "updatedAt": "..."
+    }
+  }
+]
+```
+
+Each record includes:
+- `percentageCompleted` — how far the user has read (0–100)
+- `lastReadAt` — timestamp of the most recent reading activity
+- `book` — the book being read (full object)
+- `chapter` — the latest chapter the user read (nullable)
+
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

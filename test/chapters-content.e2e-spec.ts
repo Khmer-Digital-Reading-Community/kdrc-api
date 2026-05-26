@@ -2,9 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
-import { ChaptersModule } from './chapters.module';
-import { Chapter } from './chapter.entity';
-import { Book } from '../books/book.entity';
+import { ChaptersModule } from '../src/modules/chapters/chapters.module';
+import { Chapter } from '../src/modules/chapters/chapter.entity';
+import { Book } from '../src/modules/books/book.entity';
 import { ChapterType } from 'src/common/enums/chapter-type.enum';
 
 /**
@@ -156,15 +156,13 @@ describe('Chapter Content - Performance', () => {
   it('should handle concurrent requests without blocking', async () => {
     const mockContent =
       'This is a test chapter content for concurrent request testing.';
-    const promises = [];
+    const promises: Promise<{ wordCount: number; readingTime: number }>[] = [];
 
     for (let i = 0; i < 10; i++) {
       promises.push(
         Promise.resolve({
           wordCount: mockContent.split(/\s+/).length,
-          readingTime: Math.ceil(
-            mockContent.split(/\s+/).length / 225,
-          ),
+          readingTime: Math.ceil(mockContent.split(/\s+/).length / 225),
         }),
       );
     }
@@ -225,7 +223,8 @@ describe('Chapter Content - Edge Cases', () => {
   });
 
   it('should handle URLs and email addresses as words', () => {
-    const content = 'Visit https://example.com or email test@example.com for more info';
+    const content =
+      'Visit https://example.com or email test@example.com for more info';
     const words = content
       .trim()
       .split(/\s+/)

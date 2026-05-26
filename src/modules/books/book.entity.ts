@@ -8,9 +8,13 @@ import {
   ManyToMany,
   JoinTable,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Category } from '../categories/category.entity';
+import { Genre } from '../genres/entities/genre.entity';
+import { Tag } from '../tags/entities/tag.entity';
+import { BookMetadata } from './entities/book-metadata.entity';
 import { BookStatus } from 'src/common/enums/book-status.enum';
 import { Review } from '../reviews/review.entity';
 import { Chapter } from '../chapters/entities/chapter.entity';
@@ -23,8 +27,11 @@ export class Book {
   @Column()
   title!: string;
 
-  @Column('text')
-  content!: string;
+  @Column('text', { default: '' })
+  description!: string;
+
+  @Column({ nullable: true })
+  coverImageUrl?: string;
 
   @Column({
     type: 'enum',
@@ -39,29 +46,25 @@ export class Book {
   })
   rating!: number;
 
-  @Column({
-    default: 0,
-  })
+  @Column({ default: 0 })
   readCount?: number;
 
-  @Column({
-    default: 0,
-  })
+  @Column({ default: 0 })
   likeCount?: number;
+
+  @Column('text', { nullable: true })
+  tableOfContents?: string;
 
   @ManyToOne(() => User, (user) => user.books, {
     onDelete: 'CASCADE',
   })
   author!: User;
 
-  @OneToMany(() => Review, (review) => review.book)
-  reviews!: Review[];
-
-  @CreateDateColumn()
-  createdAt!: Date;
-
-  @UpdateDateColumn()
-  updatedAt!: Date;
+  @ManyToOne(() => Genre, (genre) => genre.books, {
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
+  genre?: Genre;
 
   @ManyToMany(() => Category, (category) => category.books, {
     cascade: true,
@@ -69,6 +72,27 @@ export class Book {
   @JoinTable()
   categories!: Category[];
 
+  @ManyToMany(() => Tag, (tag) => tag.books, {
+    cascade: true,
+  })
+  @JoinTable()
+  tags!: Tag[];
+
+  @OneToOne(() => BookMetadata, (metadata) => metadata.book, {
+    cascade: true,
+    eager: true,
+  })
+  metadata?: BookMetadata;
+
+  @OneToMany(() => Review, (review) => review.book)
+  reviews!: Review[];
+
   @OneToMany(() => Chapter, (chapter) => chapter.book)
   chapters!: Chapter[];
+
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
 }

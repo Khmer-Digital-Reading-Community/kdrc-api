@@ -12,7 +12,10 @@ import {
 } from '@nestjs/common';
 import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { ChaptersService } from './chapters.service';
-import { CreateChapterDto, UpdateChapterDto, ChapterResponseDto, ChapterContentDto } from './dto';
+import { CreateChapterDto } from './dto/create-chapter.dto';
+import { UpdateChapterDto } from './dto/update-chapter.dto';
+import { ChapterContentDto } from './dto/chapter-content.dto';
+import { ChapterResponseDto } from './dto/chapter-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 /**
@@ -89,9 +92,7 @@ export class ChaptersController {
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(3600) // Cache for 1 hour
   @Get(':id/content')
-  async getChapterContent(
-    @Param('id') id: string,
-  ): Promise<ChapterContentDto> {
+  async getChapterContent(@Param('id') id: string): Promise<ChapterContentDto> {
     return this.chaptersService.getChapterContent(id);
   }
 
@@ -118,7 +119,7 @@ export class ChaptersController {
     @Body() dto: CreateChapterDto,
     @Req() req,
   ): Promise<ChapterResponseDto> {
-    return this.chaptersService.create(dto);
+    return this.chaptersService.create(dto, req.user);
   }
 
   /**
@@ -136,7 +137,7 @@ export class ChaptersController {
     @Body() dto: UpdateChapterDto,
     @Req() req,
   ): Promise<ChapterResponseDto> {
-    return this.chaptersService.update(id, dto);
+    return this.chaptersService.update(id, dto, req.user);
   }
 
   /**
@@ -149,6 +150,6 @@ export class ChaptersController {
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async delete(@Param('id') id: string, @Req() req) {
-    return this.chaptersService.delete(id);
+    return this.chaptersService.delete(id, req.user);
   }
 }
