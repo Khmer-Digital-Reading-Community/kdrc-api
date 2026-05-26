@@ -58,16 +58,16 @@ export class BooksService {
       data: books.map((book) => ({
         id: book.id,
         title: book.title,
-        authurName: book.author ? book.author.name || 'Unkwown' : 'Unknown',
+        authorName: book.author?.name || 'Unknown', // Typo fix
         description: book.content ? book.content.substring(0, 100) + '...' : '',
-        converImageUrl: book.coverImageUrl,
-        genres: book.categories,
+        coverImageUrl: book.coverImageUrl,
+        genres: book.categories || [],
         createdAt: book.createdAt,
       })),
       meta: {
         totalItems: total,
-        itemPerPage: limit,
-        currentPAge: page,
+        itemsPerPage: limit,
+        currentPage: page,
         totalPages: Math.ceil(total / limit),
       },
     };
