@@ -18,6 +18,7 @@ import { ChallengesModule } from './modules/challenges/challenges.module';
 import { AchievementsModule } from './modules/achievements/achievements.module';
 import { CommunityModule } from './modules/community/community.module';
 import { CommentsModule } from './modules/interactions/comments/comments.module';
+import { ExchangesModule } from './modules/exchanges/exchanges.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { CommentsModule } from './modules/interactions/comments/comments.module'
     AchievementsModule,
     CommunityModule,
     CommentsModule,
+    ExchangesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -15,6 +15,7 @@ import { ReadingProgress } from '../../modules/reading-progress/reading-progress
 import { Genre } from 'src/modules/genres/entities/genre.entity';
 import { Tag } from 'src/modules/tags/entities/tag.entity';
 import { BookMetadata } from 'src/modules/books/entities/book-metadata.entity';
+import { Exchange } from 'src/modules/exchanges/entities/exchange.entity';
 
 const toBool = (value: string | undefined, fallback = false) => {
   if (value === undefined) {
@@ -30,6 +31,7 @@ export const databaseConfig: DataSourceOptions = {
   username: process.env.POSTGRES_USER ?? 'postgres',
   password: process.env.POSTGRES_PASSWORD ?? 'postgres',
   database: process.env.POSTGRES_DB ?? 'postgres',
+
   entities: [
     User,
     Book,
@@ -47,6 +49,7 @@ export const databaseConfig: DataSourceOptions = {
     Achievement,
     UserAchievement,
     ReadingProgress,
+    Exchange,
   ],
   synchronize: toBool(process.env.TYPEORM_SYNC, true),
   migrations: [__dirname + '/../../migrations/*{.ts,.js}'],
