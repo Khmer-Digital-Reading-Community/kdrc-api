@@ -6,6 +6,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { BookCondition, ExchangeType } from '../../../common/enums/';
 
 export class CreateExchangeDto {
@@ -17,9 +18,9 @@ export class CreateExchangeDto {
   @IsNotEmpty()
   author!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  imageUrl!: string;
+  imageUrl?: string;
 
   @IsEnum(BookCondition, { message: 'Invalid book condition' })
   condition!: BookCondition;
@@ -32,7 +33,16 @@ export class CreateExchangeDto {
   location!: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(0, { message: 'Price cannot be negative' })
   price?: number;
+
+  @IsString()
+  @IsNotEmpty()
+  tradingFor!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  description!: string;
 }
