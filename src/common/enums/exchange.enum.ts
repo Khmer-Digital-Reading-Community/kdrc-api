@@ -1,7 +1,7 @@
 export enum ExchangeType {
   SELL = 'SELL',
   SWAP = 'SWAP',
-  LEND = 'LEND',
+  GIVEAWAY = 'GIVEAWAY',
 }
 
 export enum BookCondition {

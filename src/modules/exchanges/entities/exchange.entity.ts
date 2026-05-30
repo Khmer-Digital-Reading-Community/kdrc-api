@@ -1,4 +1,7 @@
-import { BookCondition, ExchangeType } from 'src/common/enums';
+import {
+  BookCondition,
+  ExchangeType,
+} from '../../../common/enums/exchange.enum';
 import {
   Column,
   CreateDateColumn,
@@ -32,6 +35,12 @@ export class Exchange {
 
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   price!: number;
+
+  @Column({ default: 'Open to Offers' })
+  tradingFor!: string;
+
+  @Column({ nullable: true, type: 'text' })
+  description!: string;
 
   @CreateDateColumn()
   createdAt!: Date;
