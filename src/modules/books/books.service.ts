@@ -430,6 +430,12 @@ export class BooksService {
       });
     }
 
+    if (queryDto.status?.trim()) {
+      query.andWhere('book.status = :bookStatus', {
+        bookStatus: queryDto.status.trim(),
+      });
+    }
+
     if (queryDto.language?.trim()) {
       query
         .leftJoin('book.metadata', 'metadata')

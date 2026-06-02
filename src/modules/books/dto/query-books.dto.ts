@@ -58,4 +58,8 @@ export class QueryBooksDto {
   @IsOptional()
   @IsNumberString()
   limit?: string;
+
+  @IsOptional()
+  @IsIn(['DRAFT', 'PUBLISHED', 'ARCHIVED', 'DISCONTINUED'])
+  status?: string;
 }
