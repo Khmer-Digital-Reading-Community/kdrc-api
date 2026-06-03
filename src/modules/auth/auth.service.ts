@@ -13,7 +13,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async handleOAuthLogin(profile: OAuthProfile): Promise<AuthResponse> {
     if (!profile.email) {
@@ -47,6 +47,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       provider: user.provider,
+      name: user.name,
       role: user.role,
     };
 
@@ -103,6 +104,7 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
+      name: user.name,
       role: user.role,
     };
 
@@ -124,6 +126,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        name: user.name,
         role: user.role,
       },
     };
@@ -148,6 +151,7 @@ export class AuthService {
       const newPayload = {
         sub: user.id,
         email: user.email,
+        name: user.name,
         role: user.role,
       };
 

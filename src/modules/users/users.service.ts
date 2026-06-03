@@ -42,7 +42,7 @@ export class UsersService {
   findByEmailWithPassword(email: string) {
     return this.usersRepository.findOne({
       where: { email },
-      select: ['id', 'email', 'password', 'role'],
+      select: ['id', 'email', 'name', 'password', 'role'],
     });
   }
 
@@ -79,7 +79,7 @@ export class UsersService {
   findOneWithRefreshToken(id: string) {
     return this.usersRepository.findOne({
       where: { id },
-      select: ['id', 'email', 'role', 'refreshToken'],
+      select: ['id', 'email', 'name', 'role', 'refreshToken'],
     });
   }
 
