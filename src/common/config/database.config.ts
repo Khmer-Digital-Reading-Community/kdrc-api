@@ -16,6 +16,7 @@ import { Genre } from 'src/modules/genres/entities/genre.entity';
 import { Tag } from 'src/modules/tags/entities/tag.entity';
 import { BookMetadata } from 'src/modules/books/entities/book-metadata.entity';
 import { Exchange } from 'src/modules/exchanges/entities/exchange.entity';
+import { ContentReport } from 'src/modules/reports/content-report.entity';
 
 const toBool = (value: string | undefined, fallback = false) => {
   if (value === undefined) {
@@ -50,6 +51,7 @@ export const databaseConfig: DataSourceOptions = {
     UserAchievement,
     ReadingProgress,
     Exchange,
+    ContentReport,
   ],
   synchronize: toBool(process.env.TYPEORM_SYNC, true),
   migrations: [__dirname + '/../../migrations/*{.ts,.js}'],

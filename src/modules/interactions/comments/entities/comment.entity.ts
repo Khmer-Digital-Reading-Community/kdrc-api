@@ -1,5 +1,6 @@
 import { User } from 'src/modules/users/user.entity';
 import { Chapter } from '../../../chapters/entities/chapter.entity';
+import { CommentStatus } from 'src/common/enums/comment-status.enum';
 import {
   Column,
   CreateDateColumn,
@@ -17,7 +18,16 @@ export class Comment {
   @Column('text')
   content!: string;
 
-  // Optional: You can add a reference to the user who made the comment
+  @Column({
+    type: 'enum',
+    enum: CommentStatus,
+    default: CommentStatus.APPROVED,
+  })
+  status!: CommentStatus;
+
+  @Column({ type: 'text', nullable: true })
+  moderatorNotes?: string;
+
   @Column({ nullable: true })
   pageNumber?: number;
 

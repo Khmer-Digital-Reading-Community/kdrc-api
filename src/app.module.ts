@@ -19,6 +19,8 @@ import { AchievementsModule } from './modules/achievements/achievements.module';
 import { CommunityModule } from './modules/community/community.module';
 import { CommentsModule } from './modules/interactions/comments/comments.module';
 import { ExchangesModule } from './modules/exchanges/exchanges.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -44,6 +46,8 @@ import { ExchangesModule } from './modules/exchanges/exchanges.module';
     CommunityModule,
     CommentsModule,
     ExchangesModule,
+    AdminModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
