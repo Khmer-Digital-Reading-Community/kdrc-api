@@ -12,6 +12,7 @@ import { UserChallenge } from '../../modules/challenges/user-challenge.entity';
 import { Achievement } from '../../modules/achievements/achievement.entity';
 import { UserAchievement } from '../../modules/achievements/user-achievement.entity';
 import { ReadingProgress } from '../../modules/reading-progress/reading-progress.entity';
+import { ChapterScrollProgress } from '../../modules/reading-progress/chapter-scroll.entity';
 import { Genre } from 'src/modules/genres/entities/genre.entity';
 import { Tag } from 'src/modules/tags/entities/tag.entity';
 import { BookMetadata } from 'src/modules/books/entities/book-metadata.entity';
@@ -50,6 +51,7 @@ export const databaseConfig: DataSourceOptions = {
     Achievement,
     UserAchievement,
     ReadingProgress,
+    ChapterScrollProgress,
     Exchange,
     ContentReport,
   ],
