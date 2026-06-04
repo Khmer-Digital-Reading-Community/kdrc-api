@@ -1,19 +1,16 @@
-import { IsString, IsOptional, IsUrl, IsEnum } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { Role } from 'src/common/enums/role.enum';
 
 export class UpdateUserDto {
-  @IsString()
   @IsOptional()
+  @IsString()
   name?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   bio?: string;
 
-  @IsUrl()
   @IsOptional()
-  avatarUrl?: string;
-
-  @IsEnum(['km', 'en'])
-  @IsOptional()
-  languagePreference?: string;
+  @IsEnum(Role)
+  role?: Role;
 }

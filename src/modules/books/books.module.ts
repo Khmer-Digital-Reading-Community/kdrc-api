@@ -15,14 +15,14 @@ import { GenreModule } from '../genres/genres.module';
 import { TagModule } from '../tags/tags.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Book, BookMetadata, Category, Genre, Tag, User]),
-        NotificationsModule,
-        CloudinaryModule,
-        GenreModule,
-        TagModule,
-    ],
-    controllers: [BooksController, SearchController],
-    providers: [BooksService],
+  imports: [
+    TypeOrmModule.forFeature([Book, BookMetadata, Category, Genre, Tag, User]),
+    NotificationsModule,
+    CloudinaryModule,
+    GenreModule,
+    TagModule,
+  ],
+  controllers: [BooksController, SearchController],
+  providers: [BooksService],
 })
-export class BooksModule { }
+export class BooksModule {}

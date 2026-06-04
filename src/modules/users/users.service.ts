@@ -13,7 +13,7 @@ export class UsersService {
 
   findAll() {
     return this.usersRepository.find({
-      select: ['id', 'email', 'name', 'role', 'createdAt'],
+      select: ['id', 'email', 'name', 'role', 'bio', 'createdAt'],
       order: {
         createdAt: 'DESC',
       },
@@ -23,7 +23,7 @@ export class UsersService {
   async findOne(id: string) {
     const user = await this.usersRepository.findOne({
       where: { id },
-      select: ['id', 'email', 'name', 'role', 'createdAt'],
+      select: ['id', 'email', 'name', 'role', 'bio', 'createdAt'],
     });
 
     if (!user) {
@@ -81,6 +81,24 @@ export class UsersService {
       where: { id },
       select: ['id', 'email', 'name', 'role', 'refreshToken'],
     });
+  }
+
+  async updateProfile(userId: string, data: { name?: string; bio?: string; role?: Role }) {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (data.name !== undefined) user.name = data.name;
+    if (data.bio !== undefined) user.bio = data.bio;
+    if (data.role !== undefined) user.role = data.role;
+
+    const saved = await this.usersRepository.save(user);
+    const { password, refreshToken, ...result } = saved as User & {
+      password?: string;
+      refreshToken?: string;
+    };
+    return result;
   }
 
   // ================= FOR ADMIN ===========================
