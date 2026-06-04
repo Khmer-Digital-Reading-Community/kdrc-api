@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { Role } from 'src/common/enums/role.enum';
+import * as bcrypt from 'bcryptjs';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -23,7 +25,7 @@ export class UsersService {
   async findOne(id: string) {
     const user = await this.usersRepository.findOne({
       where: { id },
-      select: ['id', 'email', 'name', 'role', 'bio', 'createdAt'],
+      select: ['id', 'email', 'name', 'role', 'bio', 'createdAt', 'avatarUrl', 'phoneNumber'],
     });
 
     if (!user) {
@@ -83,7 +85,7 @@ export class UsersService {
     });
   }
 
-  async updateProfile(userId: string, data: { name?: string; bio?: string; role?: Role }) {
+  async updateProfile(userId: string, data: { name?: string; bio?: string; role?: Role; phoneNumber?: string; avatarUrl?: string; email?: string }) {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -92,6 +94,17 @@ export class UsersService {
     if (data.name !== undefined) user.name = data.name;
     if (data.bio !== undefined) user.bio = data.bio;
     if (data.role !== undefined) user.role = data.role;
+    if (data.phoneNumber !== undefined) user.phoneNumber = data.phoneNumber;
+    if (data.avatarUrl !== undefined) user.avatarUrl = data.avatarUrl;
+    if (data.email !== undefined) {
+      if (data.email !== user.email) {
+        const existing = await this.findByEmail(data.email);
+        if (existing) {
+          throw new BadRequestException('Email already in use');
+        }
+        user.email = data.email;
+      }
+    }
 
     const saved = await this.usersRepository.save(user);
     const { password, refreshToken, ...result } = saved as User & {
@@ -99,6 +112,28 @@ export class UsersService {
       refreshToken?: string;
     };
     return result;
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'password'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isMatch = await bcrypt.compare(dto.oldPassword, user.password);
+    if (!isMatch) {
+      throw new BadRequestException('Incorrect current password');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    user.password = hashedPassword;
+    await this.usersRepository.save(user);
+
+    return { message: 'Password updated successfully' };
   }
 
   // ================= FOR ADMIN ===========================
