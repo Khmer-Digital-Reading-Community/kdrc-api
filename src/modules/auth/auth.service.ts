@@ -78,7 +78,7 @@ export class AuthService {
       name: dto.name,
       email: dto.email,
       password: hashedPassword,
-      role: Role.WRITER,
+      role: dto.role || Role.WRITER,
     });
 
     const { password, ...result } = savedUser;
