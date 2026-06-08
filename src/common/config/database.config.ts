@@ -20,6 +20,14 @@ import { Exchange } from 'src/modules/exchanges/entities/exchange.entity';
 import { ContentReport } from 'src/modules/reports/content-report.entity';
 import { Like } from 'src/modules/interactions/likes/entities/like.entity';
 
+import { Follow } from 'src/modules/follows/follow.entity';
+import { Purchase } from 'src/modules/purchases/purchase.entity';
+import { SubscriptionPlan } from 'src/modules/subscriptions/subscription-plan.entity';
+import { UserSubscription } from 'src/modules/subscriptions/user-subscription.entity';
+import { ReadingList } from 'src/modules/reading-lists/reading-list.entity';
+import { ReadingListItem } from 'src/modules/reading-lists/reading-list-item.entity';
+import { PaymentSession } from 'src/modules/payments/payment-session.entity';
+
 const toBool = (value: string | undefined, fallback = false) => {
   if (value === undefined) {
     return fallback;
@@ -56,6 +64,13 @@ export const databaseConfig: DataSourceOptions = {
     Exchange,
     ContentReport,
     Like,
+    Follow,
+    Purchase,
+    SubscriptionPlan,
+    UserSubscription,
+    ReadingList,
+    ReadingListItem,
+    PaymentSession,
   ],
   synchronize: toBool(process.env.TYPEORM_SYNC, false),
   migrations: [__dirname + '/../../migrations/*{.ts,.js}'],
