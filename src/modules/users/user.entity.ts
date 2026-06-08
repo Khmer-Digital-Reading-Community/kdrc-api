@@ -4,6 +4,8 @@ import { Role } from 'src/common/enums/role.enum';
 import { Book } from '../books/book.entity';
 import { Notification } from '../notifications/notification.entity';
 import { Review } from '../reviews/review.entity';
+import { Like } from '../interactions/likes/entities/like.entity';
+import { Comment } from '../interactions/comments/entities/comment.entity';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -49,4 +51,10 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Review, (review) => review.reviewer)
   reviews!: Review[];
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments!: Comment[];
+
+  @OneToMany(() => Like, (like) => like.user)
+  likes!: Like[];
 }

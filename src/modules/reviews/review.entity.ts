@@ -1,8 +1,17 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Unique,
+} from 'typeorm';
 import { User } from '../users/user.entity';
 import { Book } from '../books/book.entity';
 
 @Entity('reviews')
+@Unique(['reviewerId', 'bookId'])
 export class Review {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
