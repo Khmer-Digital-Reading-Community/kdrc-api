@@ -10,6 +10,9 @@ export class ChapterResponseDto {
   status!: ChapterStatus;
   description?: string;
   wordCount!: number;
+  price!: number;
+  isPurchasable!: boolean;
+  isPremium!: boolean;
   createdAt!: Date;
   updatedAt!: Date;
 }
