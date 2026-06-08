@@ -24,6 +24,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { FollowsModule } from './modules/follows/follows.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { ReadingListsModule } from './modules/reading-lists/reading-lists.module';
 
 @Module({
@@ -55,6 +56,7 @@ import { ReadingListsModule } from './modules/reading-lists/reading-lists.module
     FollowsModule,
     PurchasesModule,
     SubscriptionsModule,
+    PaymentsModule,
     ReadingListsModule,
   ],
   controllers: [AppController],
