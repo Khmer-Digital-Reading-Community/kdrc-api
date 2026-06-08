@@ -5,12 +5,20 @@ import { User } from './user.entity';
 import { Role } from 'src/common/enums/role.enum';
 import * as bcrypt from 'bcryptjs';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { Follow } from '../follows/follow.entity';
+import { Book } from '../books/book.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+
+    @InjectRepository(Follow)
+    private readonly followRepo: Repository<Follow>,
+
+    @InjectRepository(Book)
+    private readonly bookRepo: Repository<Book>,
   ) { }
 
   findAll() {
@@ -152,5 +160,59 @@ export class UsersService {
 
     await this.usersRepository.delete(userId);
     return { message: 'User deleted' };
+  }
+
+  async getCredits(userId: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'credits'],
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return { credits: Number(user.credits) };
+  }
+
+  async addCredits(userId: string, amount: number) {
+    if (amount <= 0) throw new BadRequestException('Amount must be positive');
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    user.credits = Number(user.credits) + amount;
+    await this.usersRepository.save(user);
+    return { credits: Number(user.credits) };
+  }
+
+  async getAuthorProfile(userId: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'name', 'bio', 'avatarUrl', 'createdAt'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const followersCount = await this.followRepo.count({
+      where: { followingId: userId },
+    });
+    const followingCount = await this.followRepo.count({
+      where: { followerId: userId },
+    });
+    const booksCount = await this.bookRepo.count({
+      where: { author: { id: userId }, status: 'PUBLISHED' as any },
+    });
+
+    const books = await this.bookRepo.find({
+      where: { author: { id: userId }, status: 'PUBLISHED' as any },
+      select: ['id', 'title', 'coverImageUrl', 'rating', 'readCount', 'createdAt'],
+      order: { createdAt: 'DESC' },
+      take: 20,
+    });
+
+    return {
+      ...user,
+      followersCount,
+      followingCount,
+      booksCount,
+      books,
+    };
   }
 }

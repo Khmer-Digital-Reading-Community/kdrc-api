@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   UseGuards,
   Req,
 } from '@nestjs/common';
@@ -24,6 +25,23 @@ export class UsersController {
   @Get('me')
   getMe(@Req() req) {
     return this.usersService.findOne(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/credits')
+  getCredits(@Req() req) {
+    return this.usersService.getCredits(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('me/credits')
+  addCredits(@Req() req, @Body() body: { amount: number }) {
+    return this.usersService.addCredits(req.user.id, body.amount);
+  }
+
+  @Get('profile/:id')
+  getAuthorProfile(@Param('id') id: string) {
+    return this.usersService.getAuthorProfile(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
