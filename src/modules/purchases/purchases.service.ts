@@ -53,17 +53,24 @@ export class PurchasesService {
     user.credits = Number(user.credits) - Number(book.price);
     await this.userRepo.save(user);
 
-    const purchase = this.purchaseRepo.create({
-      userId,
-      bookId,
-      amount: book.price,
-    });
-    await this.purchaseRepo.save(purchase);
+    const purchase = await this.completeBookPurchaseWithoutCredits(userId, bookId);
 
     return {
       purchase,
       remainingCredits: Number(user.credits),
     };
+  }
+
+  async completeBookPurchaseWithoutCredits(userId: string, bookId: string) {
+    const book = await this.bookRepo.findOne({ where: { id: bookId } });
+    if (!book) throw new NotFoundException('Book not found');
+
+    const purchase = this.purchaseRepo.create({
+      userId,
+      bookId,
+      amount: book.price,
+    });
+    return this.purchaseRepo.save(purchase);
   }
 
   async buyChapter(userId: string, chapterId: string) {
@@ -107,18 +114,27 @@ export class PurchasesService {
     user.credits = Number(user.credits) - Number(chapter.price);
     await this.userRepo.save(user);
 
+    const purchase = await this.completeChapterPurchaseWithoutCredits(userId, chapterId);
+
+    return {
+      purchase,
+      remainingCredits: Number(user.credits),
+    };
+  }
+
+  async completeChapterPurchaseWithoutCredits(userId: string, chapterId: string) {
+    const chapter = await this.chapterRepo.findOne({
+      where: { id: chapterId },
+    });
+    if (!chapter) throw new NotFoundException('Chapter not found');
+
     const purchase = this.purchaseRepo.create({
       userId,
       chapterId,
       bookId: chapter.bookId,
       amount: chapter.price,
     });
-    await this.purchaseRepo.save(purchase);
-
-    return {
-      purchase,
-      remainingCredits: Number(user.credits),
-    };
+    return this.purchaseRepo.save(purchase);
   }
 
   async checkBookOwnership(userId: string, bookId: string) {
