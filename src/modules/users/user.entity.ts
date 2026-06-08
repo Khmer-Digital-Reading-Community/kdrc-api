@@ -41,6 +41,9 @@ export class User extends BaseEntity {
   @Column({ nullable: true, select: false })
   refreshToken?: string;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  credits!: number;
+
   @OneToMany(() => Book, (book) => book.author)
   books!: Book[];
 
