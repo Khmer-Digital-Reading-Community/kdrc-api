@@ -18,6 +18,8 @@ import { Tag } from 'src/modules/tags/entities/tag.entity';
 import { BookMetadata } from 'src/modules/books/entities/book-metadata.entity';
 import { Exchange } from 'src/modules/exchanges/entities/exchange.entity';
 import { ContentReport } from 'src/modules/reports/content-report.entity';
+import { Like } from 'src/modules/interactions/likes/entities/like.entity';
+
 import { Follow } from 'src/modules/follows/follow.entity';
 import { Purchase } from 'src/modules/purchases/purchase.entity';
 import { SubscriptionPlan } from 'src/modules/subscriptions/subscription-plan.entity';
@@ -61,6 +63,7 @@ export const databaseConfig: DataSourceOptions = {
     ChapterScrollProgress,
     Exchange,
     ContentReport,
+    Like,
     Follow,
     Purchase,
     SubscriptionPlan,
@@ -69,7 +72,7 @@ export const databaseConfig: DataSourceOptions = {
     ReadingListItem,
     PaymentSession,
   ],
-  synchronize: toBool(process.env.TYPEORM_SYNC, true),
+  synchronize: toBool(process.env.TYPEORM_SYNC, false),
   migrations: [__dirname + '/../../migrations/*{.ts,.js}'],
   migrationsRun: toBool(process.env.TYPEORM_MIGRATIONS_RUN, false),
 };

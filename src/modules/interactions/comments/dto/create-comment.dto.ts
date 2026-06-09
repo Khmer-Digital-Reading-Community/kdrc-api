@@ -2,8 +2,8 @@ import { IsNotEmpty, IsNumber, IsString, IsUUID } from 'class-validator';
 
 export class CreateCommentDto {
   @IsUUID()
-  @IsNotEmpty()
-  bookId!: string;
+  @IsNotEmpty({ message: 'Chapter ID is required' })
+  chapterId!: string;
 
   @IsNumber()
   @IsNotEmpty()
