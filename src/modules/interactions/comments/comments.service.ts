@@ -109,10 +109,18 @@ export class CommentsService {
 
   async findByBookAndPage(bookId: string, pageNumber: number) {
     return await this.commentsRepository.find({
-      where: {
-        chapter: { id: bookId },
-        pageNumber,
-      },
+      where: [
+        {
+          chapter: { id: bookId },
+          pageNumber,
+          status: CommentStatus.APPROVED,
+        },
+        {
+          chapter: { id: bookId },
+          pageNumber,
+          status: CommentStatus.PENDING,
+        },
+      ],
       relations: {
         user: true,
         chapter: true,
