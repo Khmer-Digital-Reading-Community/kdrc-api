@@ -83,6 +83,15 @@ export class Chapter {
   @Column({ type: 'int', default: 0 })
   wordCount!: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  price!: number;
+
+  @Column({ default: false })
+  isPurchasable!: boolean;
+
+  @Column({ default: false })
+  isPremium!: boolean;
+
   @CreateDateColumn()
   createdAt!: Date;
 

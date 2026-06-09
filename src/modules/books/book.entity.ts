@@ -41,6 +41,9 @@ export class Book {
   })
   status!: BookStatus;
 
+  @Column({ default: false })
+  isFree!: boolean;
+
   @Column({
     type: 'float',
     default: 0,
@@ -55,6 +58,15 @@ export class Book {
 
   @Column('text', { nullable: true })
   tableOfContents?: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  price!: number;
+
+  @Column({ default: false })
+  isPurchasable!: boolean;
+
+  @Column({ default: false })
+  isPremium!: boolean;
 
   @ManyToOne(() => User, (user) => user.books, {
     onDelete: 'CASCADE',
