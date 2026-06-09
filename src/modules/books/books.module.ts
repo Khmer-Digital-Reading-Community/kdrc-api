@@ -9,6 +9,7 @@ import { Category } from '../categories/category.entity';
 import { Genre } from '../genres/entities/genre.entity';
 import { Tag } from '../tags/entities/tag.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AchievementsModule } from '../achievements/achievements.module';
 import { User } from '../users/user.entity';
 import { CloudinaryModule } from '../../common/cloudinary/cloudinary.module';
 import { GenreModule } from '../genres/genres.module';
@@ -18,6 +19,7 @@ import { TagModule } from '../tags/tags.module';
   imports: [
     TypeOrmModule.forFeature([Book, BookMetadata, Category, Genre, Tag, User]),
     NotificationsModule,
+    AchievementsModule,
     CloudinaryModule,
     GenreModule,
     TagModule,

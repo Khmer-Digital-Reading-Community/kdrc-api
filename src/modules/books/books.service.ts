@@ -18,6 +18,7 @@ import { Genre } from '../genres/entities/genre.entity';
 import { Tag } from '../tags/entities/tag.entity';
 import { BookMetadata } from './entities/book-metadata.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AchievementsService } from '../achievements/achievements.service';
 import { BookStatus } from 'src/common/enums/book-status.enum';
 import { NotificationType } from '../notifications/notification.entity';
 import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
@@ -46,6 +47,7 @@ export class BooksService {
     private usersRepo: Repository<User>,
 
     private notificationsService: NotificationsService,
+    private achievementsService: AchievementsService,
     private cloudinaryService: CloudinaryService,
     private genreService: GenreService,
     private tagService: TagService,
@@ -340,9 +342,28 @@ export class BooksService {
       updatedBook.status === BookStatus.PUBLISHED
     ) {
       await this.notifyAllUsersAboutBookAvailable(updatedBook);
+      await this.checkBookAchievements(user.id);
     }
 
     return updatedBook;
+  }
+
+  private async checkBookAchievements(userId: string) {
+    const count = await this.repo.count({
+      where: { author: { id: userId }, status: BookStatus.PUBLISHED },
+    });
+
+    const names: string[] = [];
+    if (count === 1) names.push('First Chapter');
+    if (count === 10) names.push('Bookworm');
+    if (count === 25) names.push('Bibliophile');
+
+    for (const name of names) {
+      const achievement = await this.achievementsService.findByName(name);
+      if (achievement) {
+        await this.achievementsService.awardAchievement(userId, achievement.id).catch(() => {});
+      }
+    }
   }
 
   async remove(id: string, user: any) {
