@@ -24,7 +24,7 @@ export class CommentsService {
       pageNumber: createCommentDto.pageNumber,
       status: CommentStatus.PENDING,
       user: { id: userId },
-      chapter: { id: createCommentDto.bookId },
+      chapter: { id: createCommentDto.chapterId },
     });
     return await this.commentsRepository.save(comment);
   }
@@ -58,7 +58,7 @@ export class CommentsService {
       data: data.map((comment) => ({
         id: comment.id,
         content: comment.content,
-        bookId: comment.chapter?.id,
+        chapterId: comment.chapter?.id,
         userId: comment.user?.id,
         user: comment.user
           ? {
@@ -66,7 +66,7 @@ export class CommentsService {
               email: comment.user.email,
               name: comment.user.name,
             }
-          : undefined,
+          : null,
         likes: 0,
         status: comment.status,
         moderatorNotes: comment.moderatorNotes,
@@ -107,10 +107,10 @@ export class CommentsService {
     return this.commentsRepository.remove(comment);
   }
 
-  async findByBookAndPage(bookId: string, pageNumber: number) {
+  async findByBookAndPage(chapterId: string, pageNumber: number) {
     return await this.commentsRepository.find({
       where: {
-        chapter: { id: bookId },
+        chapter: { id: chapterId },
         pageNumber,
       },
       relations: {
@@ -134,7 +134,7 @@ export class CommentsService {
     });
     if (!comment) throw new NotFoundException('Comment not found');
 
-    if (comment.user.id !== userId) {
+    if (!comment.user || comment.user.id !== userId) {
       throw new ForbiddenException('You can only edit your own comments');
     }
 
@@ -149,7 +149,7 @@ export class CommentsService {
     });
     if (!comment) throw new NotFoundException('Comment not found');
 
-    if (comment.user.id !== userId) {
+    if (!comment.user || comment.user.id !== userId) {
       throw new ForbiddenException('You can only delete your own comments');
     }
 

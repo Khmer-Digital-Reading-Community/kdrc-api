@@ -8,7 +8,7 @@ export class BookmarksService {
   constructor(
     @InjectRepository(Bookmark)
     private readonly bookmarkRepo: Repository<Bookmark>,
-  ) {}
+  ) { }
 
   async addBookmark(userId: string, type: BookmarkType, targetId: string) {
     // 1. Validate inputs based on incoming structural type
@@ -42,11 +42,18 @@ export class BookmarksService {
   }
 
   async getMyBookmarks(userId: string) {
-    return await this.bookmarkRepo.find({
+    const bookmarks = await this.bookmarkRepo.find({
       where: { userId },
-      relations: ['book', 'chapter'], // Automatically hooks up loaded entity relations
+      relations: ['book', 'book.author', 'chapter', 'chapter.book', 'chapter.book.author'], // Automatically hooks up loaded entity relations
       order: { createdAt: 'DESC' },
     });
+    return bookmarks.map((bookmark) => ({
+      ...bookmark,
+      coverImage:
+        bookmark.book?.coverImageUrl ||
+        bookmark.chapter?.book?.coverImageUrl ||
+        '',
+    }));
   }
 
   async removeBookmark(userId: string, type: BookmarkType, targetId: string) {
@@ -60,7 +67,7 @@ export class BookmarksService {
 
     // Direct database wipe command (Highly performant block query!)
     const result = await this.bookmarkRepo.delete(lookupCriteria);
-    
+
     if (result.affected === 0) {
       throw new NotFoundException('Bookmark not found in your collection.');
     }

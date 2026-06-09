@@ -8,15 +8,14 @@ import {
   Body,
   UseGuards,
   Req,
-  UseInterceptors,
 } from '@nestjs/common';
-import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { ChaptersService } from './chapters.service';
 import { CreateChapterDto } from './dto/create-chapter.dto';
 import { UpdateChapterDto } from './dto/update-chapter.dto';
 import { ChapterContentDto } from './dto/chapter-content.dto';
 import { ChapterResponseDto } from './dto/chapter-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 
 /**
  * Chapters Controller
@@ -24,7 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
  *
  * @remarks
  * GET /chapters/book/:bookId - Fetch all chapters for a book
- * GET /chapters/:id/content - Fetch full content for a single chapter (cached)
+ * GET /chapters/:id/content - Fetch full content for a single chapter
  * POST /chapters - Create a new chapter
  * PATCH /chapters/:id - Update a chapter
  * DELETE /chapters/:id - Delete a chapter
@@ -55,11 +54,13 @@ export class ChaptersController {
    * @throws NotFoundException if book doesn't exist
    * @throws BadRequestException if bookId format is invalid
    */
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('book/:bookId')
   async getChaptersByBookId(
     @Param('bookId') bookId: string,
+    @Req() req,
   ): Promise<ChapterResponseDto[]> {
-    return this.chaptersService.getChaptersByBookId(bookId);
+    return this.chaptersService.getChaptersByBookId(bookId, req.user);
   }
 
   /**
@@ -89,11 +90,13 @@ export class ChaptersController {
    * @throws NotFoundException if chapter doesn't exist
    * @throws BadRequestException if chapter ID format is invalid
    */
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(3600) // Cache for 1 hour
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id/content')
-  async getChapterContent(@Param('id') id: string): Promise<ChapterContentDto> {
-    return this.chaptersService.getChapterContent(id);
+  async getChapterContent(
+    @Param('id') id: string,
+    @Req() req,
+  ): Promise<ChapterContentDto> {
+    return this.chaptersService.getChapterContent(id, req.user);
   }
 
   /**

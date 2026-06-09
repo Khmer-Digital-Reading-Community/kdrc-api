@@ -18,8 +18,9 @@ import { BookMetadata } from './entities/book-metadata.entity';
 import { BookStatus } from 'src/common/enums/book-status.enum';
 import { Review } from '../reviews/review.entity';
 import { Chapter } from '../chapters/entities/chapter.entity';
+import { Like } from '../interactions/likes/entities/like.entity';
 
-@Entity()
+@Entity('book')
 export class Book {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -40,6 +41,9 @@ export class Book {
   })
   status!: BookStatus;
 
+  @Column({ default: false })
+  isFree!: boolean;
+
   @Column({
     type: 'float',
     default: 0,
@@ -54,6 +58,15 @@ export class Book {
 
   @Column('text', { nullable: true })
   tableOfContents?: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  price!: number;
+
+  @Column({ default: false })
+  isPurchasable!: boolean;
+
+  @Column({ default: false })
+  isPremium!: boolean;
 
   @ManyToOne(() => User, (user) => user.books, {
     onDelete: 'CASCADE',
@@ -86,6 +99,9 @@ export class Book {
 
   @OneToMany(() => Review, (review) => review.book)
   reviews!: Review[];
+
+  @OneToMany(() => Like, (like) => like.book)
+  likes!: Like[];
 
   @OneToMany(() => Chapter, (chapter) => chapter.book)
   chapters!: Chapter[];

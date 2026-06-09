@@ -26,7 +26,7 @@ export class BooksController {
   constructor(
     private booksService: BooksService,
     private cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
   @Get()
   findAll(@Query() query: QueryBooksDto) {

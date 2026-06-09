@@ -470,6 +470,10 @@ export class BooksService {
         minRating: Number(queryDto.minRating),
       });
     }
+
+    if (queryDto.isFree === 'true') {
+      query.andWhere('book.isFree = :isFree', { isFree: true });
+    }
   }
 
   private applyOrdering(

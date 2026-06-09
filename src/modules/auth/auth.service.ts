@@ -73,13 +73,12 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    console.log('HASHED:', hashedPassword);
 
     const savedUser = await this.usersService.create({
       name: dto.name,
       email: dto.email,
       password: hashedPassword,
-      role: Role.WRITER,
+      role: dto.role || Role.WRITER,
     });
 
     const { password, ...result } = savedUser;
@@ -88,15 +87,11 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmailWithPassword(dto.email);
-    console.log('FOUND USER:', user);
-    console.log('INPUT PASSWORD:', dto.password);
-    console.log('DB PASSWORD:', user?.password);
     if (!user || !user.password) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const isMatch = await bcrypt.compare(dto.password, user.password);
-    console.log('MATCH RESULT:', isMatch);
     if (!isMatch) {
       throw new UnauthorizedException('Invalid credentials');
     }

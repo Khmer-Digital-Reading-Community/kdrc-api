@@ -15,6 +15,9 @@ export class ChapterContentDto {
   status!: ChapterStatus;
   description?: string;
   bookId!: string;
+  price!: number;
+  isPurchasable!: boolean;
+  isPremium!: boolean;
   createdAt!: Date;
   updatedAt!: Date;
   wordCount!: number;
