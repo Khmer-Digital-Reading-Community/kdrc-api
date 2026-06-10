@@ -143,37 +143,6 @@ export class AdminService {
         take: limit,
       }),
     ]);
-        this.usersRepo.find({
-          select: ['id', 'name', 'email', 'createdAt'],
-          order: { createdAt: 'DESC' },
-          take: limit,
-        }),
-        this.booksRepo.find({
-          relations: ['author'],
-          order: { createdAt: 'DESC' },
-          take: limit,
-        }),
-        this.commentsRepo.find({
-          relations: ['user', 'chapter'],
-          order: { createdAt: 'DESC' },
-          take: limit,
-        }),
-        this.reportsRepo.find({
-          relations: ['reporter', 'reportedUser'],
-          order: { createdAt: 'DESC' },
-          take: limit,
-        }),
-        this.exchangesRepo.find({
-          relations: ['owner'],
-          order: { createdAt: 'DESC' },
-          take: limit,
-        }),
-        this.exchangeRequestsRepo.find({
-          relations: ['exchange', 'requester'],
-          order: { createdAt: 'DESC' },
-          take: limit,
-        }),
-      ]);
 
     const items = [
       ...users.map((u) => ({
