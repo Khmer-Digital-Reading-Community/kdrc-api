@@ -121,11 +121,17 @@ export class BooksService {
   }
 
   async findAuthorBooks(userId: string) {
-    return await this.repo.find({
-      where: { author: { id: userId } },
-      relations: ['genre', 'categories', 'tags', 'metadata'],
-      order: { updatedAt: 'DESC' },
-    });
+    return await this.repo
+      .createQueryBuilder('book')
+      .leftJoinAndSelect('book.genre', 'genre')
+      .leftJoinAndSelect('book.categories', 'categories')
+      .leftJoinAndSelect('book.tags', 'tags')
+      .leftJoinAndSelect('book.metadata', 'metadata')
+      .leftJoin('book.chapters', 'chapters')
+      .addSelect(['chapters.id', 'chapters.wordCount'])
+      .where('book.author.id = :userId', { userId })
+      .orderBy('book.updatedAt', 'DESC')
+      .getMany();
   }
 
   async getAuthorStats(userId: string) {
