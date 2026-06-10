@@ -121,29 +121,11 @@ export class BooksService {
   }
 
   async findAuthorBooks(userId: string) {
-    const books = await this.repo.find({
+    return await this.repo.find({
       where: { author: { id: userId } },
-      relations: ['genre', 'categories', 'tags', 'metadata', 'chapters'],
+      relations: ['genre', 'categories', 'tags', 'metadata'],
       order: { updatedAt: 'DESC' },
     });
-
-    books.forEach((book) => {
-      if (book.chapters) {
-        book.chapters.forEach((chapter) => {
-          if (!chapter.wordCount && chapter.content) {
-            const plainText = (chapter.content || '')
-              .replace(/<[^>]*>/g, ' ')
-              .replace(/\s+/g, ' ')
-              .trim();
-            chapter.wordCount = plainText
-              .split(' ')
-              .filter((w) => w.length > 0).length;
-          }
-        });
-      }
-    });
-
-    return books;
   }
 
   async getAuthorStats(userId: string) {
@@ -160,10 +142,7 @@ export class BooksService {
     let totalWords = 0;
     books.forEach((book) => {
       book.chapters?.forEach((chapter) => {
-        totalWords += (chapter.content || '')
-          .trim()
-          .split(/\s+/)
-          .filter((w) => w.length > 0).length;
+        totalWords += chapter.wordCount || 0;
       });
     });
 
