@@ -27,6 +27,7 @@ import { UserSubscription } from 'src/modules/subscriptions/user-subscription.en
 import { ReadingList } from 'src/modules/reading-lists/reading-list.entity';
 import { ReadingListItem } from 'src/modules/reading-lists/reading-list-item.entity';
 import { PaymentSession } from 'src/modules/payments/payment-session.entity';
+import { ExchangeRequest } from 'src/modules/exchanges/entities/exchange-request.entity';
 
 const toBool = (value: string | undefined, fallback = false) => {
   if (value === undefined) {
@@ -71,6 +72,7 @@ export const databaseConfig: DataSourceOptions = {
     ReadingList,
     ReadingListItem,
     PaymentSession,
+    ExchangeRequest,
   ],
   synchronize: toBool(process.env.TYPEORM_SYNC, false),
   migrations: [__dirname + '/../../migrations/*{.ts,.js}'],
