@@ -6,6 +6,7 @@ export enum NotificationType {
   WARNING = 'warning',
   ERROR = 'error',
   SUCCESS = 'success',
+  ACHIEVEMENT_EARNED = 'achievement_earned',
 }
 
 @Entity('notifications')
