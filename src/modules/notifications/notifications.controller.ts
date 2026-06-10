@@ -71,8 +71,9 @@ export class NotificationsController {
     return this.notificationsService.getUnreadCount(req.user.id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.notificationsService.remove(id);
+  remove(@Param('id') id: string, @Req() req) {
+    return this.notificationsService.remove(id, req.user.id);
   }
 }

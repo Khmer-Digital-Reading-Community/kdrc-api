@@ -45,4 +45,8 @@ export class CreateExchangeDto {
   @IsString()
   @IsNotEmpty()
   description!: string;
+
+  @IsOptional()
+  @IsString()
+  contactNumber?: string;
 }
