@@ -12,7 +12,6 @@ import { Review } from '../reviews/review.entity';
 import { ContentReport } from '../reports/content-report.entity';
 import { Exchange } from '../exchanges/entities/exchange.entity';
 import { ExchangeRequest } from '../exchanges/entities/exchange-request.entity';
-import { AdminExchangeService } from './admin-exchange.service';
 
 @Module({
   imports: [
@@ -31,4 +30,4 @@ import { AdminExchangeService } from './admin-exchange.service';
   controllers: [AdminController],
   providers: [AdminService, AdminExchangeService],
 })
-export class AdminModule {}
+export class AdminModule { }
