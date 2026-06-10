@@ -17,9 +17,11 @@ import { User } from '../users/user.entity';
 import { Genre } from '../genres/entities/genre.entity';
 import { Tag } from '../tags/entities/tag.entity';
 import { BookMetadata } from './entities/book-metadata.entity';
+import { Chapter } from '../chapters/entities/chapter.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AchievementsService } from '../achievements/achievements.service';
 import { BookStatus } from 'src/common/enums/book-status.enum';
+import { ChapterStatus } from 'src/common/enums/chapter-status.enum';
 import { NotificationType } from '../notifications/notification.entity';
 import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
 import { GenreService } from '../genres/genres.service';
@@ -42,6 +44,9 @@ export class BooksService {
 
     @InjectRepository(BookMetadata)
     private metadataRepo: Repository<BookMetadata>,
+
+    @InjectRepository(Chapter)
+    private chaptersRepo: Repository<Chapter>,
 
     @InjectRepository(User)
     private usersRepo: Repository<User>,
@@ -326,6 +331,7 @@ export class BooksService {
       oldStatus !== BookStatus.PUBLISHED &&
       updatedBook.status === BookStatus.PUBLISHED
     ) {
+      await this.publishFirstChapter(id);
       await this.notifyAllUsersAboutBookAvailable(updatedBook);
       await this.checkBookAchievements(user.id);
     }
@@ -558,6 +564,18 @@ export class BooksService {
       return match ? `toscan/book-covers/${match[1]}` : null;
     } catch {
       return null;
+    }
+  }
+
+  private async publishFirstChapter(bookId: string) {
+    const firstChapter = await this.chaptersRepo.findOne({
+      where: { bookId },
+      order: { order: 'ASC', chapterNumber: 'ASC' },
+    });
+
+    if (firstChapter && firstChapter.status !== ChapterStatus.PUBLISHED) {
+      firstChapter.status = ChapterStatus.PUBLISHED;
+      await this.chaptersRepo.save(firstChapter);
     }
   }
 
