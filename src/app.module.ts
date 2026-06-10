@@ -21,6 +21,11 @@ import { CommentsModule } from './modules/interactions/comments/comments.module'
 import { ExchangesModule } from './modules/exchanges/exchanges.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { FollowsModule } from './modules/follows/follows.module';
+import { PurchasesModule } from './modules/purchases/purchases.module';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { ReadingListsModule } from './modules/reading-lists/reading-lists.module';
 
 @Module({
   imports: [
@@ -48,6 +53,11 @@ import { ReportsModule } from './modules/reports/reports.module';
     ExchangesModule,
     AdminModule,
     ReportsModule,
+    FollowsModule,
+    PurchasesModule,
+    SubscriptionsModule,
+    PaymentsModule,
+    ReadingListsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

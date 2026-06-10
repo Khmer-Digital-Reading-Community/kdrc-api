@@ -1,4 +1,4 @@
-import { IsArray, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateBookMetadataDto } from './create-book-metadata.dto';
 
@@ -26,6 +26,10 @@ export class CreateBookDto {
   @IsArray()
   @IsString({ each: true })
   tagSlugs?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;
 
   @IsOptional()
   @IsString()

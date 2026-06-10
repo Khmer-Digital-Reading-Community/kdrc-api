@@ -12,6 +12,8 @@ import { Book } from '../../books/book.entity';
 import { Comment } from '../../interactions/comments/entities/comment.entity';
 import { ChapterType } from 'src/common/enums/chapter-type.enum';
 import { ChapterStatus } from 'src/common/enums/chapter-status.enum';
+// import { User } from 'src/modules/users/user.entity';
+import { Like } from '../../interactions/likes/entities/like.entity';
 
 export enum ChapterContentType {
   TEXT = 'text',
@@ -67,6 +69,9 @@ export class Chapter {
   @Column()
   bookId!: string;
 
+  @OneToMany(() => Like, (like) => like.chapter)
+  likes!: Like[];
+
   @ManyToOne(() => Book, (book) => book.chapters, {
     onDelete: 'CASCADE',
   })
@@ -77,6 +82,15 @@ export class Chapter {
 
   @Column({ type: 'int', default: 0 })
   wordCount!: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  price!: number;
+
+  @Column({ default: false })
+  isPurchasable!: boolean;
+
+  @Column({ default: false })
+  isPremium!: boolean;
 
   @CreateDateColumn()
   createdAt!: Date;

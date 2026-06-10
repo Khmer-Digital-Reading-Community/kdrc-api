@@ -3,6 +3,7 @@ import {
   IsNumber,
   IsEnum,
   IsOptional,
+  IsBoolean,
   MinLength,
   Min,
 } from 'class-validator';
@@ -39,4 +40,16 @@ export class UpdateChapterDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsNumber()
+  @IsOptional()
+  price?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  isPurchasable?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isPremium?: boolean;
 }

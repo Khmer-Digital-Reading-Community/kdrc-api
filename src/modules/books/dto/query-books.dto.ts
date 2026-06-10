@@ -30,6 +30,10 @@ export class QueryBooksDto {
   language?: string;
 
   @IsOptional()
+  @IsIn(['true', 'false'])
+  isFree?: string;
+
+  @IsOptional()
   @IsNumberString()
   minRating?: string;
 

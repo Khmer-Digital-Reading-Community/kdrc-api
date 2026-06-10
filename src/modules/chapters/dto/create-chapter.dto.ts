@@ -3,6 +3,7 @@ import {
   IsNumber,
   IsEnum,
   IsOptional,
+  IsBoolean,
   MinLength,
   Min,
 } from 'class-validator';
@@ -37,6 +38,18 @@ export class CreateChapterDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsNumber()
+  @IsOptional()
+  price?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  isPurchasable?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isPremium?: boolean;
 
   @IsString()
   bookId!: string;

@@ -1,4 +1,4 @@
-import { IsArray, IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsArray, IsBoolean, IsOptional, IsString, IsEnum, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 import { BookStatus } from 'src/common/enums/book-status.enum';
 import { CreateBookMetadataDto } from './create-book-metadata.dto';
@@ -15,6 +15,10 @@ export class UpdateBookDto {
   @IsOptional()
   @IsString()
   coverImageUrl?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;
 
   @IsOptional()
   @IsEnum(BookStatus)
@@ -37,6 +41,18 @@ export class UpdateBookDto {
   @IsOptional()
   @IsString()
   tableOfContents?: string;
+
+  @IsOptional()
+  @IsNumber()
+  price?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isPurchasable?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isPremium?: boolean;
 
   @IsOptional()
   @Type(() => CreateBookMetadataDto)
