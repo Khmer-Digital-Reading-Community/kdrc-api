@@ -1,4 +1,11 @@
-import { Column, Entity, ManyToOne, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { User } from '../users/user.entity';
 
 export enum NotificationType {
@@ -6,6 +13,12 @@ export enum NotificationType {
   WARNING = 'warning',
   ERROR = 'error',
   SUCCESS = 'success',
+  ACHIEVEMENT_EARNED = 'achievement_earned',
+  BOOK_PUBLISHED = 'book_published',
+  BOOK_REVIEWED = 'book_reviewed',
+  EXCHANGE_UPDATE = 'exchange_update',
+  COMMUNITY_MENTION = 'community_mention',
+  SYSTEM_ALERT = 'system_alert',
 }
 
 @Entity('notifications')

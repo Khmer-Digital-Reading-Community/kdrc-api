@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { NotificationType } from '../notifications/notification.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Achievement } from './achievement.entity';
 import { UserAchievement } from './user-achievement.entity';
 import { CreateAchievementDto } from './dto/create-achievement.dto';
@@ -12,10 +14,19 @@ export class AchievementsService {
     private readonly achievementRepo: Repository<Achievement>,
     @InjectRepository(UserAchievement)
     private readonly userAchievementRepo: Repository<UserAchievement>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   findAll(): Promise<Achievement[]> {
     return this.achievementRepo.find({ order: { category: 'ASC', name: 'ASC' } });
+  }
+
+  findByName(name: string): Promise<Achievement | null> {
+    return this.achievementRepo.findOneBy({ name });
+  }
+
+  findByCategory(category: string): Promise<Achievement[]> {
+    return this.achievementRepo.findBy({ category });
   }
 
   create(dto: CreateAchievementDto): Promise<Achievement> {
@@ -44,7 +55,19 @@ export class AchievementsService {
     });
     if (existing) return existing;
 
+    const achievement = await this.achievementRepo.findOneBy({ id: achievementId });
+    if (!achievement) throw new NotFoundException('Achievement not found');
+
     const ua = this.userAchievementRepo.create({ userId, achievementId });
-    return this.userAchievementRepo.save(ua);
+    const saved = await this.userAchievementRepo.save(ua);
+
+    await this.notificationsService.create({
+      title: 'Achievement Unlocked',
+      message: `You unlocked the "${achievement.name}" achievement!`,
+      type: NotificationType.ACHIEVEMENT_EARNED,
+      recipientId: userId,
+    });
+
+    return saved;
   }
 }

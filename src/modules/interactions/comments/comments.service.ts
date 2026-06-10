@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Comment } from './entities/comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
@@ -25,6 +25,7 @@ export class CommentsService {
       status: CommentStatus.PENDING,
       user: { id: userId },
       chapter: { id: createCommentDto.chapterId },
+      parentId: createCommentDto.parentId,
     });
     return await this.commentsRepository.save(comment);
   }
@@ -34,11 +35,23 @@ export class CommentsService {
     const limit = Number(query.limit ?? 10);
     const skip = (page - 1) * limit;
 
+    const sortColumnMap: Record<string, string> = {
+      content: 'comment.content',
+      user: 'user.name',
+      createdAt: 'comment.createdAt',
+      status: 'comment.status',
+      updatedAt: 'comment.updatedAt',
+    };
+    const sortBy = query.sortBy ?? 'createdAt';
+    const sortOrder =
+      (query.sortOrder ?? 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    const orderColumn = sortColumnMap[sortBy] ?? 'comment.createdAt';
+
     const qb = this.commentsRepository
       .createQueryBuilder('comment')
       .leftJoinAndSelect('comment.user', 'user')
       .leftJoinAndSelect('comment.chapter', 'chapter')
-      .orderBy('comment.createdAt', 'DESC')
+      .orderBy(orderColumn, sortOrder)
       .skip(skip)
       .take(limit);
 
@@ -107,12 +120,31 @@ export class CommentsService {
     return this.commentsRepository.remove(comment);
   }
 
+  async adminBulkRemove(commentIds: string[]) {
+    const comments = await this.commentsRepository.find({
+      where: { id: In(commentIds) },
+    });
+    if (comments.length === 0) {
+      throw new NotFoundException('No comments found for the provided ids');
+    }
+    await this.commentsRepository.remove(comments);
+    return { deleted: comments.length };
+  }
+
   async findByBookAndPage(chapterId: string, pageNumber: number) {
     return await this.commentsRepository.find({
-      where: {
-        chapter: { id: chapterId },
-        pageNumber,
-      },
+      where: [
+        {
+          chapter: { id: chapterId },
+          pageNumber,
+          status: CommentStatus.APPROVED,
+        },
+        {
+          chapter: { id: chapterId },
+          pageNumber,
+          status: CommentStatus.PENDING,
+        },
+      ],
       relations: {
         user: true,
         chapter: true,

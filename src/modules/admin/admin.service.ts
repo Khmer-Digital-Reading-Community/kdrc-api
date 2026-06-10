@@ -12,6 +12,12 @@ import {
   ReportStatus,
 } from '../reports/content-report.entity';
 import { CommentStatus } from 'src/common/enums/comment-status.enum';
+import { Exchange } from '../exchanges/entities/exchange.entity';
+import { ExchangeRequest } from '../exchanges/entities/exchange-request.entity';
+import {
+  ExchangeListingStatus,
+  ExchangeRequestStatus,
+} from '../../common/enums/exchange.enum';
 
 @Injectable()
 export class AdminService {
@@ -27,7 +33,11 @@ export class AdminService {
     @InjectRepository(Review) private readonly reviewsRepo: Repository<Review>,
     @InjectRepository(ContentReport)
     private readonly reportsRepo: Repository<ContentReport>,
-  ) {}
+    @InjectRepository(Exchange)
+    private readonly exchangesRepo: Repository<Exchange>,
+    @InjectRepository(ExchangeRequest)
+    private readonly exchangeRequestsRepo: Repository<ExchangeRequest>,
+  ) { }
 
   async getStats() {
     const [
@@ -39,6 +49,10 @@ export class AdminService {
       totalReviews,
       totalReports,
       pendingReports,
+      totalExchangeListings,
+      activeExchangeListings,
+      totalExchangeRequests,
+      pendingExchangeRequests,
     ] = await Promise.all([
       this.usersRepo.count(),
       this.booksRepo.count(),
@@ -48,6 +62,14 @@ export class AdminService {
       this.reviewsRepo.count(),
       this.reportsRepo.count(),
       this.reportsRepo.count({ where: { status: ReportStatus.PENDING } }),
+      this.exchangesRepo.count(),
+      this.exchangesRepo.count({
+        where: { listingStatus: ExchangeListingStatus.ACTIVE },
+      }),
+      this.exchangeRequestsRepo.count(),
+      this.exchangeRequestsRepo.count({
+        where: { status: ExchangeRequestStatus.PENDING },
+      }),
     ]);
 
     const thirtyDaysAgo = new Date();
@@ -63,6 +85,11 @@ export class AdminService {
       .where('book.createdAt >= :since', { since: thirtyDaysAgo })
       .getCount();
 
+    const newExchangeListingsThisMonth = await this.exchangesRepo
+      .createQueryBuilder('exchange')
+      .where('exchange.createdAt >= :since', { since: thirtyDaysAgo })
+      .getCount();
+
     return {
       totalUsers,
       totalBooks,
@@ -74,32 +101,48 @@ export class AdminService {
       pendingReports,
       newUsersThisMonth,
       newBooksThisMonth,
+      totalExchangeListings,
+      activeExchangeListings,
+      totalExchangeRequests,
+      pendingExchangeRequests,
+      newExchangeListingsThisMonth,
     };
   }
 
   async getActivity(limit = 10) {
-    const [users, books, comments, reports] = await Promise.all([
-      this.usersRepo.find({
-        select: ['id', 'name', 'email', 'createdAt'],
-        order: { createdAt: 'DESC' },
-        take: limit,
-      }),
-      this.booksRepo.find({
-        relations: ['author'],
-        order: { createdAt: 'DESC' },
-        take: limit,
-      }),
-      this.commentsRepo.find({
-        relations: ['user', 'chapter'],
-        order: { createdAt: 'DESC' },
-        take: limit,
-      }),
-      this.reportsRepo.find({
-        relations: ['reporter', 'reportedUser'],
-        order: { createdAt: 'DESC' },
-        take: limit,
-      }),
-    ]);
+    const [users, books, comments, reports, exchanges, exchangeRequests] =
+      await Promise.all([
+        this.usersRepo.find({
+          select: ['id', 'name', 'email', 'createdAt'],
+          order: { createdAt: 'DESC' },
+          take: limit,
+        }),
+        this.booksRepo.find({
+          relations: ['author'],
+          order: { createdAt: 'DESC' },
+          take: limit,
+        }),
+        this.commentsRepo.find({
+          relations: ['user', 'chapter'],
+          order: { createdAt: 'DESC' },
+          take: limit,
+        }),
+        this.reportsRepo.find({
+          relations: ['reporter', 'reportedUser'],
+          order: { createdAt: 'DESC' },
+          take: limit,
+        }),
+        this.exchangesRepo.find({
+          relations: ['owner'],
+          order: { createdAt: 'DESC' },
+          take: limit,
+        }),
+        this.exchangeRequestsRepo.find({
+          relations: ['exchange', 'requester'],
+          order: { createdAt: 'DESC' },
+          take: limit,
+        }),
+      ]);
 
     const items = [
       ...users.map((u) => ({
@@ -128,6 +171,20 @@ export class AdminService {
         type: 'report' as const,
         title: 'Content reported',
         subtitle: r.description.slice(0, 60),
+        timestamp: r.createdAt,
+      })),
+      ...exchanges.map((e) => ({
+        id: e.id,
+        type: 'exchange_listing' as const,
+        title: 'New exchange listing',
+        subtitle: `${e.title} · ${e.owner?.name || 'Unknown owner'}`,
+        timestamp: e.createdAt,
+      })),
+      ...exchangeRequests.map((r) => ({
+        id: r.id,
+        type: 'exchange_trade' as const,
+        title: 'New trade proposal',
+        subtitle: `${r.exchange?.title || 'Listing'} · ${r.requester?.name || 'Unknown user'}`,
         timestamp: r.createdAt,
       })),
     ];
@@ -159,10 +216,26 @@ export class AdminService {
       .groupBy('book.status')
       .getRawMany();
 
+    const exchangesByStatus = await this.exchangesRepo
+      .createQueryBuilder('exchange')
+      .select('exchange.listingStatus', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('exchange.listingStatus')
+      .getRawMany();
+
+    const tradesByStatus = await this.exchangeRequestsRepo
+      .createQueryBuilder('request')
+      .select('request.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('request.status')
+      .getRawMany();
+
     return {
       stats,
       userGrowth,
       booksByStatus,
+      exchangesByStatus,
+      tradesByStatus,
     };
   }
 }

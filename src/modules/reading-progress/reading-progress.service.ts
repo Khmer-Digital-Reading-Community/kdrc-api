@@ -5,6 +5,8 @@ import { ReadingProgress } from './reading-progress.entity';
 import { UpsertProgressDto } from './dto/upsert-progress.dto';
 import { Chapter } from '../chapters/entities/chapter.entity';
 import { Book } from '../books/book.entity';
+import { AchievementsService } from '../achievements/achievements.service';
+import { ChallengesService } from '../challenges/challenges.service';
 
 @Injectable()
 export class ReadingProgressService {
@@ -17,6 +19,9 @@ export class ReadingProgressService {
 
     @InjectRepository(Chapter)
     private chaptersRepo: Repository<Chapter>,
+
+    private achievementsService: AchievementsService,
+    private challengesService: ChallengesService,
   ) {}
 
 
@@ -61,20 +66,69 @@ export class ReadingProgressService {
       where: { user: { id: userId }, book: { id: dto.bookId } },
     });
 
+    const previousPercentage = existing?.percentageCompleted ?? 0;
+
     if (existing) {
       existing.percentageCompleted = percentageCompleted;
       existing.lastReadAt = new Date();
       if (dto.chapterId) existing.chapter = { id: dto.chapterId } as any;
-      return this.repo.save(existing);
+      await this.repo.save(existing);
+    } else {
+      const progress = this.repo.create({
+        user: { id: userId } as any,
+        book: { id: dto.bookId } as any,
+        chapter: dto.chapterId ? ({ id: dto.chapterId } as any) : undefined,
+        percentageCompleted,
+      });
+      await this.repo.save(progress);
     }
 
-    const progress = this.repo.create({
-      user: { id: userId } as any,
-      book: { id: dto.bookId } as any,
-      chapter: dto.chapterId ? ({ id: dto.chapterId } as any) : undefined,
-      percentageCompleted,
+    await this.checkStreakAchievements(userId);
+
+    if (
+      percentageCompleted >= 100 &&
+      previousPercentage < 100
+    ) {
+      await this.updateChallengeProgressOnBookComplete(userId).catch(() => {});
+    }
+
+    return existing ?? await this.repo.findOne({
+      where: { user: { id: userId }, book: { id: dto.bookId } },
     });
-    return this.repo.save(progress);
+  }
+
+  private async updateChallengeProgressOnBookComplete(userId: string) {
+    const myChallenges = await this.challengesService.getMyChallenges(userId);
+    for (const challenge of myChallenges) {
+      if (!challenge.expired && !challenge.completedAt) {
+        await this.challengesService.updateProgress(userId, challenge.id, {
+          completedBooks: (challenge.completedBooks ?? 0) + 1,
+        }).catch(() => {});
+      }
+    }
+  }
+
+  private async checkStreakAchievements(userId: string) {
+    const all = await this.repo.find({
+      where: { user: { id: userId } },
+    });
+    const streak = this.calculateStreak(all);
+    const uniqueBooks = new Set(all.map((p) => p.book?.id)).size;
+
+    const names: string[] = [];
+    if (streak >= 7) names.push('7-Day Streak');
+    if (streak >= 30) names.push('30-Day Streak');
+    if (streak >= 1) names.push('Streak Reader');
+    if (uniqueBooks >= 1) names.push('First Chapter');
+    if (uniqueBooks >= 10) names.push('Bookworm');
+    if (uniqueBooks >= 25) names.push('Bibliophile');
+
+    for (const name of names) {
+      const achievement = await this.achievementsService.findByName(name);
+      if (achievement) {
+        await this.achievementsService.awardAchievement(userId, achievement.id).catch(() => {});
+      }
+    }
   }
 
   async getUserStats(userId: string) {

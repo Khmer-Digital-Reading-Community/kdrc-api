@@ -9,6 +9,7 @@ RUN npm ci --no-audit --no-fund
 
 # Copy source for local development container
 COPY . .
+RUN npm run build
 
 EXPOSE 3000
 

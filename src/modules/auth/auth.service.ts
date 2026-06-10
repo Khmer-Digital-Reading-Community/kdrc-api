@@ -72,6 +72,10 @@ export class AuthService {
       throw new BadRequestException('Email already exists');
     }
 
+    if (dto.role === Role.ADMIN) {
+      throw new BadRequestException('Admin accounts cannot be self-registered');
+    }
+
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     const savedUser = await this.usersService.create({

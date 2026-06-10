@@ -1,16 +1,22 @@
 import {
   BookCondition,
+  ExchangeListingStatus,
   ExchangeType,
 } from '../../../common/enums/exchange.enum';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { User } from '../../users/user.entity';
+import { ExchangeRequest } from './exchange-request.entity';
 
-@Entity('exchanges') // this will be the name of the table in PostgreSQL
+@Entity('exchanges')
 export class Exchange {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -41,6 +47,26 @@ export class Exchange {
 
   @Column({ nullable: true, type: 'text' })
   description!: string;
+
+  @Column({ type: 'text', nullable: true })
+  contactNumber?: string | null;
+
+  @Column({
+    type: 'enum',
+    enum: ExchangeListingStatus,
+    default: ExchangeListingStatus.ACTIVE,
+  })
+  listingStatus!: ExchangeListingStatus;
+
+  @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'userId' })
+  owner?: User | null;
+
+  @Column({ type: 'text', nullable: true })
+  userId?: string | null;
+
+  @OneToMany(() => ExchangeRequest, (request) => request.exchange)
+  requests!: ExchangeRequest[];
 
   @CreateDateColumn()
   createdAt!: Date;
