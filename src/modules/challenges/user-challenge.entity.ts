@@ -21,6 +21,12 @@ export class UserChallenge extends BaseEntity {
   @Column({ type: 'timestamp', nullable: true })
   completedAt?: Date;
 
+  @Column({ default: false })
+  expired!: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  expiredAt?: Date;
+
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user?: User;

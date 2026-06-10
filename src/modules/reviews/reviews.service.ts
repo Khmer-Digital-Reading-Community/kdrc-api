@@ -6,6 +6,7 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { Book } from '../books/book.entity';
 import { User } from '../users/user.entity';
+import { AchievementsService } from '../achievements/achievements.service';
 
 @Injectable()
 export class ReviewsService {
@@ -18,6 +19,8 @@ export class ReviewsService {
 
     @InjectRepository(User)
     private usersRepo: Repository<User>,
+
+    private achievementsService: AchievementsService,
   ) {}
 
   async create(createReviewDto: CreateReviewDto, user: any) {
@@ -51,7 +54,29 @@ export class ReviewsService {
       book: { id: createReviewDto.bookId },
     });
 
-    return this.reviewsRepo.save(review);
+    const saved = await this.reviewsRepo.save(review);
+
+    await this.checkReviewAchievements(user.id);
+
+    return saved;
+  }
+
+  private async checkReviewAchievements(userId: string) {
+    const count = await this.reviewsRepo.count({
+      where: { reviewerId: userId },
+    });
+
+    const names: string[] = [];
+    if (count === 1) names.push('First Review');
+    if (count === 10) names.push('Reviewer');
+    if (count === 50) names.push('Community Voice');
+
+    for (const name of names) {
+      const achievement = await this.achievementsService.findByName(name);
+      if (achievement) {
+        await this.achievementsService.awardAchievement(userId, achievement.id).catch(() => {});
+      }
+    }
   }
 
   async findAll() {

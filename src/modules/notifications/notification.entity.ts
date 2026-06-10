@@ -14,6 +14,11 @@ export enum NotificationType {
   ERROR = 'error',
   SUCCESS = 'success',
   ACHIEVEMENT_EARNED = 'achievement_earned',
+  BOOK_PUBLISHED = 'book_published',
+  BOOK_REVIEWED = 'book_reviewed',
+  EXCHANGE_UPDATE = 'exchange_update',
+  COMMUNITY_MENTION = 'community_mention',
+  SYSTEM_ALERT = 'system_alert',
 }
 
 @Entity('notifications')
