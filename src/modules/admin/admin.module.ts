@@ -9,6 +9,9 @@ import { Notification } from '../notifications/notification.entity';
 import { Challenge } from '../challenges/challenge.entity';
 import { Review } from '../reviews/review.entity';
 import { ContentReport } from '../reports/content-report.entity';
+import { Exchange } from '../exchanges/entities/exchange.entity';
+import { ExchangeRequest } from '../exchanges/entities/exchange-request.entity';
+import { AdminExchangeService } from './admin-exchange.service';
 
 @Module({
   imports: [
@@ -20,9 +23,11 @@ import { ContentReport } from '../reports/content-report.entity';
       Challenge,
       Review,
       ContentReport,
+      Exchange,
+      ExchangeRequest,
     ]),
   ],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, AdminExchangeService],
 })
 export class AdminModule {}
