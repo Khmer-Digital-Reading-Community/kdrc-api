@@ -30,4 +30,4 @@ import { ExchangeRequest } from '../exchanges/entities/exchange-request.entity';
   controllers: [AdminController],
   providers: [AdminService, AdminExchangeService],
 })
-export class AdminModule {}
+export class AdminModule { }
