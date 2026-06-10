@@ -25,7 +25,7 @@ export class CommentsService {
       status: CommentStatus.PENDING,
       user: { id: userId },
       chapter: { id: createCommentDto.chapterId },
-      parentId: createCommentDto.parentId || null,
+      parentId: createCommentDto.parentId,
     });
     return await this.commentsRepository.save(comment);
   }
