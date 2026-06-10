@@ -1,20 +1,24 @@
 import {
-  Controller,
-  Get,
-  Post,
+  BadRequestException,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
   Patch,
-  Delete,
+  Post,
   Query,
-  UseInterceptors,
+  Req,
   UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ExchangesService } from './exchanges.service';
-import { CreateExchangeDto } from './dto/create-exchange.dto';
-import { UpdateExchangeDto } from './dto/update-exchange.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CreateExchangeDto } from './dto/create-exchange.dto';
+import { UpdateExchangeDto } from './dto/update-exchange.dto';
+import { ExchangesService } from './exchanges.service';
 
 @Controller('exchanges')
 export class ExchangesController {
@@ -23,48 +27,68 @@ export class ExchangesController {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   @UseInterceptors(FileInterceptor('image'))
   async create(
+    @Req() req,
     @UploadedFile() file: Express.Multer.File,
     @Body() createExchangeDto: CreateExchangeDto,
   ) {
-    // If a file was uploaded, send it to Cloudinary and attach the URL
     if (file) {
       const result = await this.cloudinaryService.uploadBookCover(file);
-      if (result && result.secure_url) {
-        // assign uploaded image URL to the DTO so service can persist it
-        (createExchangeDto as any).imageUrl = result.secure_url;
+      if (result?.secure_url) {
+        createExchangeDto.imageUrl = result.secure_url;
       }
     }
 
-    return this.exchangesService.create(createExchangeDto);
+    if (!createExchangeDto.imageUrl) {
+      throw new BadRequestException('A book cover image is required');
+    }
+
+    return this.exchangesService.create(createExchangeDto, req.user.id);
   }
 
   @Get()
   findAll(
-    @Query() query: { search?: string; condition?: string; location?: string },
+    @Query() query: { search?: string; condition?: string; location?: string; page?: string; limit?: string },
   ) {
     return this.exchangesService.searchExchanges(query);
   }
-  // fetch a single book by id
+
+  @UseGuards(JwtAuthGuard)
+  @Get('mine')
+  findMine(@Req() req) {
+    return this.exchangesService.findMine(req.user.id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.exchangesService.findOne(id);
   }
 
-  // update a book my id
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(
+  @UseInterceptors(FileInterceptor('image'))
+  async update(
+    @Req() req,
     @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
     @Body() updateExchangeDto: UpdateExchangeDto,
   ) {
-    return this.exchangesService.update(id, updateExchangeDto);
+    if (file) {
+      const result = await this.cloudinaryService.uploadBookCover(file);
+      if (result?.secure_url) {
+        updateExchangeDto.imageUrl = result.secure_url;
+      }
+    }
+
+    return this.exchangesService.update(id, updateExchangeDto, req.user.id);
   }
 
-  // delete a book by id
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.exchangesService.remove(id);
+  remove(@Req() req, @Param('id') id: string) {
+    return this.exchangesService.remove(id, req.user.id);
   }
 }
