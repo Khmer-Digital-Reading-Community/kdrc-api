@@ -26,6 +26,7 @@ import { PurchasesModule } from './modules/purchases/purchases.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReadingListsModule } from './modules/reading-lists/reading-lists.module';
+import { InteractionsModule } from './modules/interactions/interactions.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { ReadingListsModule } from './modules/reading-lists/reading-lists.module
     SubscriptionsModule,
     PaymentsModule,
     ReadingListsModule,
+    InteractionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
