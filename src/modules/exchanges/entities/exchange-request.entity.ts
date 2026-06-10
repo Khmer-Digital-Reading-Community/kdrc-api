@@ -34,7 +34,7 @@ export class ExchangeRequest {
   @JoinColumn({ name: 'offeredExchangeId' })
   offeredExchange?: Exchange | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   offeredExchangeId?: string | null;
 
   @Column({ type: 'text', nullable: true })
@@ -47,10 +47,10 @@ export class ExchangeRequest {
   })
   status!: ExchangeRequestStatus;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   meetingLocation?: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   meetingTime?: string | null;
 
   @CreateDateColumn()
