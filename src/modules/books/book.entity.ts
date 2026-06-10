@@ -41,7 +41,7 @@ export class Book {
   })
   status!: BookStatus;
 
-  @Column({ default: false })
+  @Column({ default: true })
   isFree!: boolean;
 
   @Column({

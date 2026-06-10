@@ -238,6 +238,10 @@ export class BooksService {
       genre,
       tags,
       status: BookStatus.DRAFT,
+      isFree: true,
+      price: 0,
+      isPurchasable: false,
+      isPremium: false,
     });
 
     const savedBook = await this.repo.save(book);
