@@ -48,7 +48,7 @@ export class Exchange {
   @Column({ nullable: true, type: 'text' })
   description!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   contactNumber?: string | null;
 
   @Column({
@@ -62,7 +62,7 @@ export class Exchange {
   @JoinColumn({ name: 'userId' })
   owner?: User | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   userId?: string | null;
 
   @OneToMany(() => ExchangeRequest, (request) => request.exchange)

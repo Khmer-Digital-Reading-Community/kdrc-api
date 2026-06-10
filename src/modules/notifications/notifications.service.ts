@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from './notification.entity';
@@ -84,8 +88,13 @@ export class NotificationsService {
     );
   }
 
-  async remove(id: string) {
+  async remove(id: string, userId: string) {
     const notification = await this.findOne(id);
+    if (notification.recipientId !== userId) {
+      throw new ForbiddenException(
+        'You can only delete your own notifications',
+      );
+    }
     return this.notificationsRepo.remove(notification);
   }
 

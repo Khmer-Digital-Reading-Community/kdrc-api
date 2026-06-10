@@ -19,6 +19,7 @@ import { Roles } from 'src/modules/auth/roles.decorator';
 import { Role } from 'src/common/enums/role.enum';
 import { QueryCommentsDto } from './dto/query-comments.dto';
 import { ModerateCommentDto } from './dto/moderate-comment.dto';
+import { BulkDeleteCommentsDto } from './dto/bulk-delete-comments.dto';
 
 type AuthenticatedRequest = {
   user: {
@@ -67,6 +68,13 @@ export class CommentSController {
   @Patch(':id/reject')
   reject(@Param('id') id: string, @Body() dto: ModerateCommentDto) {
     return this.commentsService.reject(id, dto.moderatorNotes);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Delete()
+  adminBulkRemove(@Body() dto: BulkDeleteCommentsDto) {
+    return this.commentsService.adminBulkRemove(dto.ids);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

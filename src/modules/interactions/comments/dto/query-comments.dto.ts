@@ -1,4 +1,11 @@
-import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { CommentStatus } from 'src/common/enums/comment-status.enum';
 
@@ -22,4 +29,12 @@ export class QueryCommentsDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsIn(['content', 'user', 'createdAt', 'status', 'updatedAt'])
+  sortBy?: string;
+
+  @IsOptional()
+  @IsIn(['ASC', 'DESC', 'asc', 'desc'])
+  sortOrder?: string;
 }

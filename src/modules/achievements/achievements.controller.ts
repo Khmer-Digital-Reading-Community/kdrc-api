@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { AchievementsService } from './achievements.service';
 import { CreateAchievementDto } from './dto/create-achievement.dto';
+import { AwardAchievementDto } from './dto/award-achievement.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -34,7 +35,10 @@ export class AchievementsController {
   @Post(':id/award')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  award(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
-    return this.service.awardAchievement(req.user.id, id);
+  award(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AwardAchievementDto,
+  ) {
+    return this.service.awardAchievement(dto.userId, id);
   }
 }
