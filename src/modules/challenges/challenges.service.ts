@@ -1,6 +1,6 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { NotificationType } from '../notifications/notification.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AchievementsService } from '../achievements/achievements.service';
@@ -28,8 +28,15 @@ export class ChallengesService {
     private readonly achievementsService: AchievementsService,
   ) {}
 
-  findAll(): Promise<Challenge[]> {
+  async findAll(): Promise<Challenge[]> {
+    await this.autoDeleteExpiredChallenges();
     return this.challengeRepo.find({ order: { createdAt: 'DESC' } });
+  }
+
+  private async autoDeleteExpiredChallenges(): Promise<void> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    await this.challengeRepo.delete({ deadline: LessThan(today) });
   }
 
   findOne(id: string): Promise<Challenge> {
@@ -51,7 +58,29 @@ export class ChallengesService {
   async remove(id: string): Promise<void> {
     const result = await this.challengeRepo.delete(id);
     if (result.affected === 0) throw new NotFoundException('Challenge not found');
-    
+  }
+
+  async getParticipants(challengeId: string) {
+    const challenge = await this.challengeRepo.findOneBy({ id: challengeId });
+    if (!challenge) throw new NotFoundException('Challenge not found');
+
+    const userChallenges = await this.userChallengeRepo.find({
+      where: { challengeId },
+      relations: ['user'],
+      order: { joinedAt: 'DESC' },
+    });
+
+    return userChallenges.map((uc) => ({
+      id: uc.id,
+      userId: uc.userId,
+      name: uc.user?.name || 'Unknown',
+      email: uc.user?.email,
+      avatarUrl: uc.user?.avatarUrl,
+      completedBooks: uc.completedBooks,
+      joinedAt: uc.joinedAt,
+      completedAt: uc.completedAt,
+      expired: uc.expired,
+    }));
   }
 
   async join(userId: string, challengeId: string): Promise<UserChallenge> {

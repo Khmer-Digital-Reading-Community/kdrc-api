@@ -30,6 +30,12 @@ export class ReadingProgressController {
     return this.service.getUserStats(req.user.id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('activity')
+  getActivity(@Req() req) {
+    return this.service.getActivity(req.user.id);
+  }
+
   @Get('leaderboard')
   getLeaderboard(@Query('sort') sort?: string) {
     const validSorts = ['books', 'streak', 'pages'] as const;

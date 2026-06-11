@@ -134,7 +134,7 @@ export class ReadingProgressService {
   async getUserStats(userId: string) {
     const all = await this.repo.find({
       where: { user: { id: userId } },
-      relations: ['book'],
+      relations: ['book', 'book.genre'],
     });
 
     const uniqueBooks = new Set(all.map((p) => p.book?.id)).size;
@@ -145,12 +145,68 @@ export class ReadingProgressService {
 
     const streak = this.calculateStreak(all);
 
+    const genreMap = new Map<string, { name: string; count: number; color: string }>();
+    const genreColors = ['#1c3a2e', '#3a5fa5', '#7a3d92', '#c5a050', '#0f6e56', '#a04040', '#2d6b5e', '#d4a574'];
+    let gi = 0;
+    for (const p of all) {
+      const genreName = p.book?.genre?.name || 'Other';
+      if (!genreMap.has(genreName)) {
+        genreMap.set(genreName, { name: genreName, count: 0, color: genreColors[gi++ % genreColors.length] });
+      }
+      genreMap.get(genreName)!.count++;
+    }
+
+    const totalBooks = uniqueBooks || 1;
+    const genres = Array.from(genreMap.values())
+      .map((g) => ({ ...g, pct: Math.round((g.count / totalBooks) * 100) }))
+      .sort((a, b) => b.count - a.count);
+
     return {
       booksRead: uniqueBooks,
       currentStreak: streak,
       totalPages: Math.round(totalPages),
       totalEntries: all.length,
+      genres,
     };
+  }
+
+  async getActivity(userId: string) {
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+    const all = await this.repo.find({
+      where: { user: { id: userId } },
+      select: ['lastReadAt'],
+    });
+
+    const dayCount = new Map<string, number>();
+    for (const entry of all) {
+      const d = new Date(entry.lastReadAt);
+      if (d >= sixtyDaysAgo) {
+        const key = d.toISOString().slice(0, 10);
+        dayCount.set(key, (dayCount.get(key) || 0) + 1);
+      }
+    }
+
+    // Build 8 weeks of data starting from a Monday
+    const weeks: { date: string; count: number }[][] = [];
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() - 55);
+    start.setDate(start.getDate() - start.getDay() + 1);
+
+    for (let w = 0; w < 8; w++) {
+      const week: { date: string; count: number }[] = [];
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(start);
+        date.setDate(date.getDate() + w * 7 + d);
+        const key = date.toISOString().slice(0, 10);
+        week.push({ date: key, count: dayCount.get(key) || 0 });
+      }
+      weeks.push(week);
+    }
+
+    return { weeks };
   }
 
   async getLeaderboard(sort: 'books' | 'streak' | 'pages' = 'books') {
