@@ -48,6 +48,11 @@ export class CommentSController {
     return this.commentsService.create(req.user.id, createCommentDto);
   }
 
+  @Get('global')
+  findGlobal() {
+    return this.commentsService.findGlobal();
+  }
+
   @Get('book/:bookId/page/:pageNumber')
   findByBookAndPage(
     @Param('bookId') bookId: string,

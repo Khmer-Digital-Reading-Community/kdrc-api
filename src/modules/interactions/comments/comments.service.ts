@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, IsNull } from 'typeorm';
 import { Comment } from './entities/comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
@@ -24,10 +24,14 @@ export class CommentsService {
       pageNumber: createCommentDto.pageNumber,
       status: CommentStatus.APPROVED,
       user: { id: userId },
-      chapter: { id: createCommentDto.chapterId },
+      chapter: createCommentDto.chapterId ? { id: createCommentDto.chapterId } : undefined,
       parentId: createCommentDto.parentId,
     });
-    return await this.commentsRepository.save(comment);
+    const saved = await this.commentsRepository.save(comment);
+    return await this.commentsRepository.findOne({
+      where: { id: saved.id },
+      relations: { user: true, chapter: true },
+    });
   }
 
   async findAllAdmin(query: QueryCommentsDto) {
@@ -193,5 +197,19 @@ export class CommentsService {
     }
 
     return await this.commentsRepository.remove(comment);
+  }
+
+  async findGlobal() {
+    return await this.commentsRepository.find({
+      where: {
+        chapter: IsNull(),
+      },
+      relations: {
+        user: true,
+      },
+      order: {
+        createdAt: 'ASC',
+      },
+    });
   }
 }
