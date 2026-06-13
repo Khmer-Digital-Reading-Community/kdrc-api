@@ -16,6 +16,8 @@
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
     "migration:show": "npm run typeorm -- migration:show",
+    "seed:plans": "ts-node -r tsconfig-paths/register src/seeds/subscription-plans.seed.ts",
+    "seed:demo": "ts-node -r tsconfig-paths/register src/seeds/demo-data.seed.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",

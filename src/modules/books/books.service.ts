@@ -18,6 +18,7 @@ import { Genre } from '../genres/entities/genre.entity';
 import { Tag } from '../tags/entities/tag.entity';
 import { BookMetadata } from './entities/book-metadata.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ReadingProgress } from '../reading-progress/reading-progress.entity';
 import { BookStatus } from 'src/common/enums/book-status.enum';
 import { NotificationType } from '../notifications/notification.entity';
 import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
@@ -44,6 +45,9 @@ export class BooksService {
 
     @InjectRepository(User)
     private usersRepo: Repository<User>,
+
+    @InjectRepository(ReadingProgress)
+    private readingProgressRepo: Repository<ReadingProgress>,
 
     private notificationsService: NotificationsService,
     private cloudinaryService: CloudinaryService,
@@ -212,6 +216,19 @@ export class BooksService {
     const [data, total] = await query.getManyAndCount();
 
     return this.paginate(data, total, page, limit);
+  }
+
+  async getReaderTrend(userId: string) {
+    const books = await this.repo.find({
+      where: { author: { id: userId }, status: BookStatus.PUBLISHED },
+      select: ['id', 'title', 'readCount'],
+      order: { readCount: 'DESC' },
+    });
+
+    return {
+      labels: books.map((b) => b.title),
+      readers: books.map((b) => b.readCount ?? 0),
+    };
   }
 
   async create(dto: CreateBookDto, user: any) {

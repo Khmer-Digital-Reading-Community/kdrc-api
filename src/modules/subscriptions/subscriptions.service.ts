@@ -113,10 +113,18 @@ export class SubscriptionsService {
   }
 
   async getMySubscription(userId: string) {
-    return this.subRepo.findOne({
+    const sub = await this.subRepo.findOne({
       where: { userId, status: SubscriptionStatus.ACTIVE },
       relations: ['plan'],
     });
+
+    if (sub && new Date() > new Date(sub.endDate)) {
+      sub.status = SubscriptionStatus.EXPIRED;
+      await this.subRepo.save(sub);
+      return null;
+    }
+
+    return sub;
   }
 
   async checkSubscription(userId: string) {

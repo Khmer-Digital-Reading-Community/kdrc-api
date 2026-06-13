@@ -10,13 +10,14 @@ import { Genre } from '../genres/entities/genre.entity';
 import { Tag } from '../tags/entities/tag.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { User } from '../users/user.entity';
+import { ReadingProgress } from '../reading-progress/reading-progress.entity';
 import { CloudinaryModule } from '../../common/cloudinary/cloudinary.module';
 import { GenreModule } from '../genres/genres.module';
 import { TagModule } from '../tags/tags.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Book, BookMetadata, Category, Genre, Tag, User]),
+    TypeOrmModule.forFeature([Book, BookMetadata, Category, Genre, Tag, User, ReadingProgress]),
     NotificationsModule,
     CloudinaryModule,
     GenreModule,

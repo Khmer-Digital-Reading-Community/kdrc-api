@@ -47,6 +47,12 @@ export class BooksController {
     return this.booksService.getAuthorStats(req.user.id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('me/reader-trend')
+  getReaderTrend(@Req() req) {
+    return this.booksService.getReaderTrend(req.user.id);
+  }
+
   @Get('search')
   search(
     @Query('q') q: string,
