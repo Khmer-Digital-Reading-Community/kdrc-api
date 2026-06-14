@@ -23,7 +23,7 @@ WORKDIR /app
 
 # Install dependencies needed for build
 COPY package*.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
 COPY . .
 RUN npm run build
@@ -36,7 +36,7 @@ ENV NODE_ENV=production
 
 # Install production-only dependencies for a smaller runtime image
 COPY package*.json ./
-RUN npm ci --omit=dev --no-audit --no-fund
+RUN npm install --omit=dev --no-audit --no-fund
 
 # Copy compiled app
 COPY --from=builder /app/dist ./dist
