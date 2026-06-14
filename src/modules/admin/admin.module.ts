@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { AdminExchangeService } from './admin-exchange.service';
+import { AuthModule } from '../auth/auth.module';
 import { User } from '../users/user.entity';
 import { Book } from '../books/book.entity';
 import { Comment } from '../interactions/comments/entities/comment.entity';
@@ -15,6 +16,7 @@ import { ExchangeRequest } from '../exchanges/entities/exchange-request.entity';
 
 @Module({
   imports: [
+    AuthModule,
     TypeOrmModule.forFeature([
       User,
       Book,
