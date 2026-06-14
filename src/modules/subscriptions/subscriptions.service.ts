@@ -113,10 +113,18 @@ export class SubscriptionsService {
   }
 
   async getMySubscription(userId: string) {
-    return this.subRepo.findOne({
+    const sub = await this.subRepo.findOne({
       where: { userId, status: SubscriptionStatus.ACTIVE },
       relations: ['plan'],
     });
+
+    if (sub && new Date() > new Date(sub.endDate)) {
+      sub.status = SubscriptionStatus.EXPIRED;
+      await this.subRepo.save(sub);
+      return null;
+    }
+
+    return sub;
   }
 
   async checkSubscription(userId: string) {
@@ -139,5 +147,24 @@ export class SubscriptionsService {
   async canAccessContent(userId: string): Promise<boolean> {
     const { subscribed } = await this.checkSubscription(userId);
     return subscribed;
+  }
+
+  async toggleAutoRenew(userId: string) {
+    const sub = await this.subRepo.findOne({
+      where: { userId, status: SubscriptionStatus.ACTIVE },
+    });
+    if (!sub) throw new NotFoundException('No active subscription found');
+
+    sub.autoRenew = !sub.autoRenew;
+    await this.subRepo.save(sub);
+    return { autoRenew: sub.autoRenew };
+  }
+
+  async getPaymentHistory(userId: string) {
+    return this.subRepo.find({
+      where: { userId },
+      relations: ['plan'],
+      order: { createdAt: 'DESC' },
+    });
   }
 }

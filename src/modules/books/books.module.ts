@@ -12,13 +12,14 @@ import { Chapter } from '../chapters/entities/chapter.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AchievementsModule } from '../achievements/achievements.module';
 import { User } from '../users/user.entity';
+import { ReadingProgress } from '../reading-progress/reading-progress.entity';
 import { CloudinaryModule } from '../../common/cloudinary/cloudinary.module';
 import { GenreModule } from '../genres/genres.module';
 import { TagModule } from '../tags/tags.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Book, BookMetadata, Category, Genre, Tag, User, Chapter]),
+    TypeOrmModule.forFeature([Book, BookMetadata, Category, Genre, Tag, User, Chapter, ReadingProgress]),
     NotificationsModule,
     AchievementsModule,
     CloudinaryModule,

@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install all dependencies (including dev dependencies)
 COPY package*.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
 # Copy source for local development container
 COPY . .
