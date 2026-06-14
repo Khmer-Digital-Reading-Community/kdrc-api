@@ -8,12 +8,12 @@ import {
 
 export class CreateCommentDto {
   @IsUUID()
-  @IsNotEmpty({ message: 'Chapter ID is required' })
-  chapterId!: string;
+  @IsOptional()
+  chapterId?: string;
 
   @IsNumber()
-  @IsNotEmpty()
-  pageNumber!: number;
+  @IsOptional()
+  pageNumber?: number;
 
   @IsString()
   @IsNotEmpty()

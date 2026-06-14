@@ -17,9 +17,12 @@ import { User } from '../users/user.entity';
 import { Genre } from '../genres/entities/genre.entity';
 import { Tag } from '../tags/entities/tag.entity';
 import { BookMetadata } from './entities/book-metadata.entity';
+import { Chapter } from '../chapters/entities/chapter.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ReadingProgress } from '../reading-progress/reading-progress.entity';
+import { AchievementsService } from '../achievements/achievements.service';
 import { BookStatus } from 'src/common/enums/book-status.enum';
+import { ChapterStatus } from 'src/common/enums/chapter-status.enum';
 import { NotificationType } from '../notifications/notification.entity';
 import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
 import { GenreService } from '../genres/genres.service';
@@ -43,6 +46,9 @@ export class BooksService {
     @InjectRepository(BookMetadata)
     private metadataRepo: Repository<BookMetadata>,
 
+    @InjectRepository(Chapter)
+    private chaptersRepo: Repository<Chapter>,
+
     @InjectRepository(User)
     private usersRepo: Repository<User>,
 
@@ -50,6 +56,7 @@ export class BooksService {
     private readingProgressRepo: Repository<ReadingProgress>,
 
     private notificationsService: NotificationsService,
+    private achievementsService: AchievementsService,
     private cloudinaryService: CloudinaryService,
     private genreService: GenreService,
     private tagService: TagService,
@@ -123,29 +130,17 @@ export class BooksService {
   }
 
   async findAuthorBooks(userId: string) {
-    const books = await this.repo.find({
-      where: { author: { id: userId } },
-      relations: ['genre', 'categories', 'tags', 'metadata', 'chapters'],
-      order: { updatedAt: 'DESC' },
-    });
-
-    books.forEach((book) => {
-      if (book.chapters) {
-        book.chapters.forEach((chapter) => {
-          if (!chapter.wordCount && chapter.content) {
-            const plainText = (chapter.content || '')
-              .replace(/<[^>]*>/g, ' ')
-              .replace(/\s+/g, ' ')
-              .trim();
-            chapter.wordCount = plainText
-              .split(' ')
-              .filter((w) => w.length > 0).length;
-          }
-        });
-      }
-    });
-
-    return books;
+    return await this.repo
+      .createQueryBuilder('book')
+      .leftJoinAndSelect('book.genre', 'genre')
+      .leftJoinAndSelect('book.categories', 'categories')
+      .leftJoinAndSelect('book.tags', 'tags')
+      .leftJoinAndSelect('book.metadata', 'metadata')
+      .leftJoin('book.chapters', 'chapters')
+      .addSelect(['chapters.id', 'chapters.wordCount'])
+      .where('book.author.id = :userId', { userId })
+      .orderBy('book.updatedAt', 'DESC')
+      .getMany();
   }
 
   async getAuthorStats(userId: string) {
@@ -162,10 +157,7 @@ export class BooksService {
     let totalWords = 0;
     books.forEach((book) => {
       book.chapters?.forEach((chapter) => {
-        totalWords += (chapter.content || '')
-          .trim()
-          .split(/\s+/)
-          .filter((w) => w.length > 0).length;
+        totalWords += chapter.wordCount || 0;
       });
     });
 
@@ -263,6 +255,10 @@ export class BooksService {
       genre,
       tags,
       status: BookStatus.DRAFT,
+      isFree: true,
+      price: 0,
+      isPurchasable: false,
+      isPremium: false,
     });
 
     const savedBook = await this.repo.save(book);
@@ -356,10 +352,30 @@ export class BooksService {
       oldStatus !== BookStatus.PUBLISHED &&
       updatedBook.status === BookStatus.PUBLISHED
     ) {
+      await this.publishFirstChapter(id);
       await this.notifyAllUsersAboutBookAvailable(updatedBook);
+      await this.checkBookAchievements(user.id);
     }
 
     return updatedBook;
+  }
+
+  private async checkBookAchievements(userId: string) {
+    const count = await this.repo.count({
+      where: { author: { id: userId }, status: BookStatus.PUBLISHED },
+    });
+
+    const names: string[] = [];
+    if (count === 1) names.push('First Chapter');
+    if (count === 10) names.push('Bookworm');
+    if (count === 25) names.push('Bibliophile');
+
+    for (const name of names) {
+      const achievement = await this.achievementsService.findByName(name);
+      if (achievement) {
+        await this.achievementsService.awardAchievement(userId, achievement.id).catch(() => {});
+      }
+    }
   }
 
   async remove(id: string, user: any) {
@@ -569,6 +585,18 @@ export class BooksService {
       return match ? `toscan/book-covers/${match[1]}` : null;
     } catch {
       return null;
+    }
+  }
+
+  private async publishFirstChapter(bookId: string) {
+    const firstChapter = await this.chaptersRepo.findOne({
+      where: { bookId },
+      order: { order: 'ASC', chapterNumber: 'ASC' },
+    });
+
+    if (firstChapter && firstChapter.status !== ChapterStatus.PUBLISHED) {
+      firstChapter.status = ChapterStatus.PUBLISHED;
+      await this.chaptersRepo.save(firstChapter);
     }
   }
 

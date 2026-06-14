@@ -6,6 +6,7 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { Book } from '../books/book.entity';
 import { User } from '../users/user.entity';
+import { AchievementsService } from '../achievements/achievements.service';
 
 @Injectable()
 export class ReviewsService {
@@ -18,7 +19,9 @@ export class ReviewsService {
 
     @InjectRepository(User)
     private usersRepo: Repository<User>,
-  ) {}
+
+    private achievementsService: AchievementsService,
+  ) { }
 
   async create(createReviewDto: CreateReviewDto, user: any) {
     if (!user?.id) {
@@ -51,7 +54,31 @@ export class ReviewsService {
       book: { id: createReviewDto.bookId },
     });
 
-    return this.reviewsRepo.save(review);
+    const saved = await this.reviewsRepo.save(review);
+
+    await this.updateBookRating(createReviewDto.bookId);
+
+    await this.checkReviewAchievements(user.id);
+
+    return saved;
+  }
+
+  private async checkReviewAchievements(userId: string) {
+    const count = await this.reviewsRepo.count({
+      where: { reviewerId: userId },
+    });
+
+    const names: string[] = [];
+    if (count === 1) names.push('First Review');
+    if (count === 10) names.push('Reviewer');
+    if (count === 50) names.push('Community Voice');
+
+    for (const name of names) {
+      const achievement = await this.achievementsService.findByName(name);
+      if (achievement) {
+        await this.achievementsService.awardAchievement(userId, achievement.id).catch(() => { });
+      }
+    }
   }
 
   async findAll() {
@@ -114,7 +141,15 @@ export class ReviewsService {
     }
 
     Object.assign(review, updateReviewDto);
-    return this.reviewsRepo.save(review);
+    const updated = await this.reviewsRepo.save(review);
+
+    if (!review.bookId) {
+      throw new NotFoundException('Associated book ID for review not found');
+    }
+
+    await this.updateBookRating(review.bookId);
+
+    return updated;
   }
 
   async remove(id: string, user: any) {
@@ -123,8 +158,16 @@ export class ReviewsService {
     if (review.reviewerId !== user.id) {
       throw new ForbiddenException('You can only delete your own reviews');
     }
+    const bookId = review.bookId;
 
-    return this.reviewsRepo.remove(review);
+    await this.reviewsRepo.remove(review);
+    if (!bookId) {
+      throw new NotFoundException('Associated book ID for review not found');
+    }
+
+    await this.updateBookRating(bookId);
+
+    return { success: true };
   }
 
   async getAverageRating(bookId: string): Promise<{
@@ -200,5 +243,21 @@ export class ReviewsService {
       totalReviews: reviews.length,
       ratingDistribution,
     };
+  }
+
+  private async updateBookRating(bookId: string) {
+    const reviews = await this.reviewsRepo.find({
+      where: { bookId },
+    });
+
+    const averageRating =
+      reviews.length === 0
+        ? 0
+        : reviews.reduce((sum, review) => sum + Number(review.rating), 0) /
+        reviews.length;
+
+    await this.booksRepo.update(bookId, {
+      rating: Math.round(averageRating * 10) / 10,
+    });
   }
 }

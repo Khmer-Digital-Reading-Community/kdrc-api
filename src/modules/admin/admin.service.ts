@@ -37,7 +37,7 @@ export class AdminService {
     private readonly exchangesRepo: Repository<Exchange>,
     @InjectRepository(ExchangeRequest)
     private readonly exchangeRequestsRepo: Repository<ExchangeRequest>,
-  ) {}
+  ) { }
 
   async getStats() {
     const [
@@ -112,37 +112,37 @@ export class AdminService {
   async getActivity(limit = 10) {
     const [users, books, comments, reports, exchanges, exchangeRequests] =
       await Promise.all([
-      this.usersRepo.find({
-        select: ['id', 'name', 'email', 'createdAt'],
-        order: { createdAt: 'DESC' },
-        take: limit,
-      }),
-      this.booksRepo.find({
-        relations: ['author'],
-        order: { createdAt: 'DESC' },
-        take: limit,
-      }),
-      this.commentsRepo.find({
-        relations: ['user', 'chapter'],
-        order: { createdAt: 'DESC' },
-        take: limit,
-      }),
-      this.reportsRepo.find({
-        relations: ['reporter', 'reportedUser'],
-        order: { createdAt: 'DESC' },
-        take: limit,
-      }),
-      this.exchangesRepo.find({
-        relations: ['owner'],
-        order: { createdAt: 'DESC' },
-        take: limit,
-      }),
-      this.exchangeRequestsRepo.find({
-        relations: ['exchange', 'requester'],
-        order: { createdAt: 'DESC' },
-        take: limit,
-      }),
-    ]);
+        this.usersRepo.find({
+          select: ['id', 'name', 'email', 'createdAt'],
+          order: { createdAt: 'DESC' },
+          take: limit,
+        }),
+        this.booksRepo.find({
+          relations: ['author'],
+          order: { createdAt: 'DESC' },
+          take: limit,
+        }),
+        this.commentsRepo.find({
+          relations: ['user', 'chapter'],
+          order: { createdAt: 'DESC' },
+          take: limit,
+        }),
+        this.reportsRepo.find({
+          relations: ['reporter', 'reportedUser'],
+          order: { createdAt: 'DESC' },
+          take: limit,
+        }),
+        this.exchangesRepo.find({
+          relations: ['owner'],
+          order: { createdAt: 'DESC' },
+          take: limit,
+        }),
+        this.exchangeRequestsRepo.find({
+          relations: ['exchange', 'requester'],
+          order: { createdAt: 'DESC' },
+          take: limit,
+        }),
+      ]);
 
     const items = [
       ...users.map((u) => ({

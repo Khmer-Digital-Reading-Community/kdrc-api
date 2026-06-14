@@ -27,6 +27,8 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReadingListsModule } from './modules/reading-lists/reading-lists.module';
 import { InteractionsModule } from './modules/interactions/interactions.module';
+import { UploadModule } from './common/upload/upload.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -60,6 +62,8 @@ import { InteractionsModule } from './modules/interactions/interactions.module';
     PaymentsModule,
     ReadingListsModule,
     InteractionsModule,
+    UploadModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

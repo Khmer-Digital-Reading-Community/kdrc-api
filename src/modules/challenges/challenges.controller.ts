@@ -31,6 +31,13 @@ export class ChallengesController {
     return this.service.findOne(id);
   }
 
+  @Get(':id/participants')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  getParticipants(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.getParticipants(id);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)

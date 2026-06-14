@@ -5,6 +5,8 @@ import { ReadingProgress } from './reading-progress.entity';
 import { UpsertProgressDto } from './dto/upsert-progress.dto';
 import { Chapter } from '../chapters/entities/chapter.entity';
 import { Book } from '../books/book.entity';
+import { AchievementsService } from '../achievements/achievements.service';
+import { ChallengesService } from '../challenges/challenges.service';
 
 @Injectable()
 export class ReadingProgressService {
@@ -17,6 +19,9 @@ export class ReadingProgressService {
 
     @InjectRepository(Chapter)
     private chaptersRepo: Repository<Chapter>,
+
+    private achievementsService: AchievementsService,
+    private challengesService: ChallengesService,
   ) {}
 
 
@@ -61,26 +66,75 @@ export class ReadingProgressService {
       where: { user: { id: userId }, book: { id: dto.bookId } },
     });
 
+    const previousPercentage = existing?.percentageCompleted ?? 0;
+
     if (existing) {
       existing.percentageCompleted = percentageCompleted;
       existing.lastReadAt = new Date();
       if (dto.chapterId) existing.chapter = { id: dto.chapterId } as any;
-      return this.repo.save(existing);
+      await this.repo.save(existing);
+    } else {
+      const progress = this.repo.create({
+        user: { id: userId } as any,
+        book: { id: dto.bookId } as any,
+        chapter: dto.chapterId ? ({ id: dto.chapterId } as any) : undefined,
+        percentageCompleted,
+      });
+      await this.repo.save(progress);
     }
 
-    const progress = this.repo.create({
-      user: { id: userId } as any,
-      book: { id: dto.bookId } as any,
-      chapter: dto.chapterId ? ({ id: dto.chapterId } as any) : undefined,
-      percentageCompleted,
+    await this.checkStreakAchievements(userId);
+
+    if (
+      percentageCompleted >= 100 &&
+      previousPercentage < 100
+    ) {
+      await this.updateChallengeProgressOnBookComplete(userId).catch(() => {});
+    }
+
+    return existing ?? await this.repo.findOne({
+      where: { user: { id: userId }, book: { id: dto.bookId } },
     });
-    return this.repo.save(progress);
+  }
+
+  private async updateChallengeProgressOnBookComplete(userId: string) {
+    const myChallenges = await this.challengesService.getMyChallenges(userId);
+    for (const challenge of myChallenges) {
+      if (!challenge.expired && !challenge.completedAt) {
+        await this.challengesService.updateProgress(userId, challenge.id, {
+          completedBooks: (challenge.completedBooks ?? 0) + 1,
+        }).catch(() => {});
+      }
+    }
+  }
+
+  private async checkStreakAchievements(userId: string) {
+    const all = await this.repo.find({
+      where: { user: { id: userId } },
+    });
+    const streak = this.calculateStreak(all);
+    const uniqueBooks = new Set(all.map((p) => p.book?.id)).size;
+
+    const names: string[] = [];
+    if (streak >= 7) names.push('7-Day Streak');
+    if (streak >= 30) names.push('30-Day Streak');
+    if (streak >= 1) names.push('Streak Reader');
+    if (uniqueBooks >= 1) names.push('First Chapter');
+    if (uniqueBooks >= 10) names.push('Bookworm');
+    if (uniqueBooks >= 25) names.push('Bibliophile');
+
+    for (const name of names) {
+      const achievement = await this.achievementsService.findByName(name);
+      if (achievement) {
+        await this.achievementsService.awardAchievement(userId, achievement.id).catch(() => {});
+      }
+    }
   }
 
   async getUserStats(userId: string) {
     const all = await this.repo.find({
       where: { user: { id: userId } },
-      relations: ['book'],
+      relations: ['book', 'book.genre'],
     });
 
     const uniqueBooks = new Set(all.map((p) => p.book?.id)).size;
@@ -91,12 +145,68 @@ export class ReadingProgressService {
 
     const streak = this.calculateStreak(all);
 
+    const genreMap = new Map<string, { name: string; count: number; color: string }>();
+    const genreColors = ['#1c3a2e', '#3a5fa5', '#7a3d92', '#c5a050', '#0f6e56', '#a04040', '#2d6b5e', '#d4a574'];
+    let gi = 0;
+    for (const p of all) {
+      const genreName = p.book?.genre?.name || 'Other';
+      if (!genreMap.has(genreName)) {
+        genreMap.set(genreName, { name: genreName, count: 0, color: genreColors[gi++ % genreColors.length] });
+      }
+      genreMap.get(genreName)!.count++;
+    }
+
+    const totalBooks = uniqueBooks || 1;
+    const genres = Array.from(genreMap.values())
+      .map((g) => ({ ...g, pct: Math.round((g.count / totalBooks) * 100) }))
+      .sort((a, b) => b.count - a.count);
+
     return {
       booksRead: uniqueBooks,
       currentStreak: streak,
       totalPages: Math.round(totalPages),
       totalEntries: all.length,
+      genres,
     };
+  }
+
+  async getActivity(userId: string) {
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+    const all = await this.repo.find({
+      where: { user: { id: userId } },
+      select: ['lastReadAt'],
+    });
+
+    const dayCount = new Map<string, number>();
+    for (const entry of all) {
+      const d = new Date(entry.lastReadAt);
+      if (d >= sixtyDaysAgo) {
+        const key = d.toISOString().slice(0, 10);
+        dayCount.set(key, (dayCount.get(key) || 0) + 1);
+      }
+    }
+
+    // Build 8 weeks of data starting from a Monday
+    const weeks: { date: string; count: number }[][] = [];
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() - 55);
+    start.setDate(start.getDate() - start.getDay() + 1);
+
+    for (let w = 0; w < 8; w++) {
+      const week: { date: string; count: number }[] = [];
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(start);
+        date.setDate(date.getDate() + w * 7 + d);
+        const key = date.toISOString().slice(0, 10);
+        week.push({ date: key, count: dayCount.get(key) || 0 });
+      }
+      weeks.push(week);
+    }
+
+    return { weeks };
   }
 
   async getLeaderboard(sort: 'books' | 'streak' | 'pages' = 'books') {
