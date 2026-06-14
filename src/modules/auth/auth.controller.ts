@@ -66,13 +66,15 @@ export class AuthController {
   }
 
   @Post('register')
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  register(@Body() dto: RegisterDto, @Req() req: Request) {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    return this.authService.register(dto, ip);
   }
 
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() dto: LoginDto, @Req() req: Request) {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    return this.authService.login(dto, ip);
   }
 
   @Post('logout')

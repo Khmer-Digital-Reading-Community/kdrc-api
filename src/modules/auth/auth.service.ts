@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
+import { BruteForceService } from './brute-force.service';
 import { AuthResponse } from './dto/auth-response.dto';
 import { LoginDto } from './dto/auth-login.dto';
 import { OAuthProfile } from './dto/oauth-profile.dto';
@@ -13,6 +14,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly bruteForce: BruteForceService,
   ) { }
 
   async handleOAuthLogin(profile: OAuthProfile): Promise<AuthResponse> {
@@ -65,7 +67,9 @@ export class AuthService {
     };
   }
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, ip: string) {
+    await this.bruteForce.checkRegisterAllowed(ip);
+
     const existing = await this.usersService.findByEmail(dto.email);
 
     if (existing) {
@@ -85,20 +89,28 @@ export class AuthService {
       role: dto.role || Role.WRITER,
     });
 
+    await this.bruteForce.recordRegistration(ip);
+
     const { password, ...result } = savedUser;
     return result;
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, ip: string) {
+    await this.bruteForce.checkLoginAllowed(ip, dto.email);
+
     const user = await this.usersService.findByEmailWithPassword(dto.email);
     if (!user || !user.password) {
+      await this.bruteForce.recordLoginFailure(ip, dto.email);
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const isMatch = await bcrypt.compare(dto.password, user.password);
     if (!isMatch) {
+      await this.bruteForce.recordLoginFailure(ip, dto.email);
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    await this.bruteForce.clearLoginAttempts(ip, dto.email);
 
     const payload = {
       sub: user.id,
