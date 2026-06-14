@@ -22,7 +22,7 @@ export class CommentsService {
     const comment = this.commentsRepository.create({
       content: createCommentDto.content,
       pageNumber: createCommentDto.pageNumber,
-      status: CommentStatus.PENDING,
+      status: CommentStatus.APPROVED,
       user: { id: userId },
       chapter: { id: createCommentDto.chapterId },
       parentId: createCommentDto.parentId,
@@ -72,6 +72,13 @@ export class CommentsService {
         id: comment.id,
         content: comment.content,
         chapterId: comment.chapter?.id,
+        chapter: comment.chapter
+          ? {
+              id: comment.chapter.id,
+              title: comment.chapter.title,
+              chapterNumber: comment.chapter.chapterNumber,
+            }
+          : null,
         userId: comment.user?.id,
         user: comment.user
           ? {
