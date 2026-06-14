@@ -28,6 +28,7 @@ import { ReadingList } from 'src/modules/reading-lists/reading-list.entity';
 import { ReadingListItem } from 'src/modules/reading-lists/reading-list-item.entity';
 import { PaymentSession } from 'src/modules/payments/payment-session.entity';
 import { ExchangeRequest } from 'src/modules/exchanges/entities/exchange-request.entity';
+import { ChatMessage } from 'src/modules/chat/entities/chat-message.entity';
 
 const toBool = (value: string | undefined, fallback = false) => {
   if (value === undefined) {
@@ -73,6 +74,7 @@ export const databaseConfig: DataSourceOptions = {
     ReadingListItem,
     PaymentSession,
     ExchangeRequest,
+    ChatMessage,
   ],
   synchronize: toBool(process.env.TYPEORM_SYNC, false),
   migrations: [__dirname + '/../../migrations/*{.ts,.js}'],
