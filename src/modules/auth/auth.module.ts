@@ -4,8 +4,11 @@ import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { BruteForceService } from './brute-force.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { RolesGuard } from './guards/roles.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UsersModule } from '../users/users.module';
 
 @Module({
@@ -27,7 +30,7 @@ import { UsersModule } from '../users/users.module';
     UsersModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
-  exports: [PassportModule, JwtModule],
+  providers: [AuthService, BruteForceService, JwtStrategy, GoogleStrategy, RolesGuard, JwtAuthGuard],
+  exports: [PassportModule, JwtModule, RolesGuard, JwtAuthGuard],
 })
 export class AuthModule {}

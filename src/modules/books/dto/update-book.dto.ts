@@ -17,6 +17,7 @@ export class UpdateBookDto {
   coverImageUrl?: string;
 
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   isFree?: boolean;
 
@@ -43,14 +44,17 @@ export class UpdateBookDto {
   tableOfContents?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   price?: number;
 
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   isPurchasable?: boolean;
 
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   isPremium?: boolean;
 

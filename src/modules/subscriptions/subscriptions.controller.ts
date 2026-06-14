@@ -78,4 +78,16 @@ export class SubscriptionsController {
   checkSubscription(@Req() req) {
     return this.subscriptionsService.checkSubscription(req.user.id);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('renew/toggle')
+  toggleAutoRenew(@Req() req) {
+    return this.subscriptionsService.toggleAutoRenew(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('history')
+  getPaymentHistory(@Req() req) {
+    return this.subscriptionsService.getPaymentHistory(req.user.id);
+  }
 }
