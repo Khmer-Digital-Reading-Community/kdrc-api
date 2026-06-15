@@ -43,6 +43,14 @@ export class ChatController {
     return this.chatService.findAllAdmin(query);
   }
 
+  // Admin: stats
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('admin/stats')
+  adminStats() {
+    return this.chatService.getStats();
+  }
+
   // Admin: delete single
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
