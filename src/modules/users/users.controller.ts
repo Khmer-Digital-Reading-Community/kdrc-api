@@ -39,6 +39,11 @@ export class UsersController {
     return this.usersService.addCredits(req.user.id, body.amount);
   }
 
+  @Get('authors')
+  getAuthors() {
+    return this.usersService.getAuthors();
+  }
+
   @Get('profile/:id')
   getAuthorProfile(@Param('id') id: string) {
     return this.usersService.getAuthorProfile(id);
