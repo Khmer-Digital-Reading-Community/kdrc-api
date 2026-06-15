@@ -180,6 +180,32 @@ export class UsersService {
     return { credits: Number(user.credits) };
   }
 
+  async getAuthors() {
+    const authors = await this.usersRepository
+      .createQueryBuilder('user')
+      .innerJoin('user.books', 'book')
+      .select(['user.id', 'user.name', 'user.bio', 'user.avatarUrl', 'user.createdAt'])
+      .addSelect('COUNT(book.id)', 'booksCount')
+      .where('book.status = :status', { status: 'PUBLISHED' })
+      .groupBy('user.id')
+      .addGroupBy('user.name')
+      .addGroupBy('user.bio')
+      .addGroupBy('user.avatarUrl')
+      .addGroupBy('user.createdAt')
+      .orderBy('COUNT(book.id)', 'DESC')
+      .addOrderBy('user.name', 'ASC')
+      .getRawAndEntities();
+
+    return authors.entities.map((user, i) => ({
+      id: user.id,
+      name: user.name,
+      bio: user.bio,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+      booksCount: Number(authors.raw[i].booksCount),
+    }));
+  }
+
   async getAuthorProfile(userId: string) {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
