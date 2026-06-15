@@ -64,7 +64,7 @@ export class BooksService {
 
   async findAll(queryDto: QueryBooksDto) {
     const pageNumber = Number(queryDto.page ?? '1');
-    const limitNumber = Number(queryDto.limit ?? '10');
+    const limitNumber = Number(queryDto.limit ?? '100');
     const skip = (pageNumber - 1) * limitNumber;
 
     const query = this.createBaseBookQuery().skip(skip).take(limitNumber);
@@ -171,7 +171,7 @@ export class BooksService {
   }
 
   async search(q: string, page = 1, limit = 10, sort?: string) {
-    if (!q || !q.trim()) {
+    if (!q?.trim()) {
       return this.paginate([], 0, page, limit);
     }
 
@@ -373,7 +373,7 @@ export class BooksService {
     for (const name of names) {
       const achievement = await this.achievementsService.findByName(name);
       if (achievement) {
-        await this.achievementsService.awardAchievement(userId, achievement.id).catch(() => {});
+        await this.achievementsService.awardAchievement(userId, achievement.id).catch(() => { });
       }
     }
   }
