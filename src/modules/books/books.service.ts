@@ -329,6 +329,9 @@ export class BooksService {
 
     const oldStatus = book.status;
     Object.assign(book, dto);
+    // Always bump updatedAt so the "last edited" time reflects every save,
+    // even when the only change is chapter content (which hits a different table).
+    book.updatedAt = new Date();
     const updatedBook = await this.repo.save(book);
 
     if (dto.metadata) {
