@@ -60,7 +60,7 @@ export class BooksService {
     private cloudinaryService: CloudinaryService,
     private genreService: GenreService,
     private tagService: TagService,
-  ) { }
+  ) {}
 
   async findAll(queryDto: QueryBooksDto) {
     const pageNumber = Number(queryDto.page ?? '1');
@@ -230,8 +230,8 @@ export class BooksService {
 
     const categories = dto.categorySlugs?.length
       ? await this.categoryRepo.find({
-        where: { slug: In(dto.categorySlugs) },
-      })
+          where: { slug: In(dto.categorySlugs) },
+        })
       : [];
 
     let genre: Genre | undefined;
@@ -241,8 +241,8 @@ export class BooksService {
 
     const tags = dto.tagSlugs?.length
       ? await Promise.all(
-        dto.tagSlugs.map((slug) => this.tagService.getOrCreateBySlug(slug)),
-      )
+          dto.tagSlugs.map((slug) => this.tagService.getOrCreateBySlug(slug)),
+        )
       : [];
 
     const book = this.repo.create({
@@ -373,7 +373,9 @@ export class BooksService {
     for (const name of names) {
       const achievement = await this.achievementsService.findByName(name);
       if (achievement) {
-        await this.achievementsService.awardAchievement(userId, achievement.id).catch(() => { });
+        await this.achievementsService
+          .awardAchievement(userId, achievement.id)
+          .catch(() => {});
       }
     }
   }
@@ -674,9 +676,9 @@ export class BooksService {
         coverImage: (b as any).coverImageUrl || null,
         author: b.author
           ? {
-            id: b.author.id,
-            name: b.author.name,
-          }
+              id: b.author.id,
+              name: b.author.name,
+            }
           : null,
       })),
       authors: authors.map((a: any) => ({

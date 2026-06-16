@@ -15,13 +15,15 @@ export interface UploadOptions {
 
 @Injectable()
 export class CloudinaryService {
-  constructor(@Inject('CLOUDINARY') private cloudinaryClient: typeof cloudinary) {}
+  constructor(
+    @Inject('CLOUDINARY') private cloudinaryClient: typeof cloudinary,
+  ) {}
 
   private hasCloudinaryCredentials() {
     return Boolean(
       process.env.CLOUDINARY_CLOUD_NAME &&
-        process.env.CLOUDINARY_API_KEY &&
-        process.env.CLOUDINARY_API_SECRET,
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET,
     );
   }
 
@@ -105,24 +107,26 @@ export class CloudinaryService {
           },
         );
       } catch (error) {
-        console.error('CloudinaryService: Failed to create upload stream:', error);
-        this.saveLocalFallback(file, localFolder)
-          .then(resolve)
-          .catch(reject);
+        console.error(
+          'CloudinaryService: Failed to create upload stream:',
+          error,
+        );
+        this.saveLocalFallback(file, localFolder).then(resolve).catch(reject);
         return;
       }
 
       if (file.buffer) {
-        console.log('CloudinaryService: Uploading buffer, size:', file.buffer.length);
+        console.log(
+          'CloudinaryService: Uploading buffer, size:',
+          file.buffer.length,
+        );
         stream.end(file.buffer);
       } else if (file.stream) {
         console.log('CloudinaryService: Uploading stream');
         const fileStream = Readable.from(file.stream);
         fileStream.pipe(stream);
       } else {
-        this.saveLocalFallback(file, localFolder)
-          .then(resolve)
-          .catch(reject);
+        this.saveLocalFallback(file, localFolder).then(resolve).catch(reject);
       }
     });
   }
@@ -136,7 +140,9 @@ export class CloudinaryService {
       folder: 'toscan/book-covers',
       quality: 'auto',
       fetch_format: 'auto',
-      transformation: [{ width: 300, height: 450, crop: 'fill', gravity: 'face' }],
+      transformation: [
+        { width: 300, height: 450, crop: 'fill', gravity: 'face' },
+      ],
     });
   }
 
@@ -154,7 +160,9 @@ export class CloudinaryService {
       folder: 'toscan/avatars',
       quality: 'auto',
       fetch_format: 'auto',
-      transformation: [{ width: 200, height: 200, crop: 'fill', gravity: 'face' }],
+      transformation: [
+        { width: 200, height: 200, crop: 'fill', gravity: 'face' },
+      ],
     });
   }
 }
