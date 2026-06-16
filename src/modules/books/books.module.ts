@@ -16,6 +16,7 @@ import { ReadingProgress } from '../reading-progress/reading-progress.entity';
 import { CloudinaryModule } from '../../common/cloudinary/cloudinary.module';
 import { GenreModule } from '../genres/genres.module';
 import { TagModule } from '../tags/tags.module';
+import { ExchangesModule } from '../exchanges/exchanges.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { TagModule } from '../tags/tags.module';
     CloudinaryModule,
     GenreModule,
     TagModule,
+    ExchangesModule,
   ],
   controllers: [BooksController, SearchController],
   providers: [BooksService],
