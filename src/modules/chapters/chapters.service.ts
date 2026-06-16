@@ -101,11 +101,14 @@ export class ChaptersService {
       return { allowed: false, reason: 'This chapter is not published yet' };
     }
 
-    // Premium chapter → requires subscription
+    // Premium chapter → requires subscription OR individual purchase
     if (chapter.isPremium) {
       if (!userId) return { allowed: false, reason: 'Login required to read premium content' };
       const subscribed = await this.isSubscribed(userId);
-      if (!subscribed) return { allowed: false, reason: 'Active subscription required to read premium chapters' };
+      if (subscribed) return { allowed: true };
+      // Fall through: user may have purchased this chapter or book individually
+      const owns = await this.ownsChapter(userId, chapter.id) || await this.ownsBook(userId, book.id);
+      if (!owns) return { allowed: false, reason: 'Active subscription or purchase required to read premium chapters' };
       return { allowed: true };
     }
 
@@ -121,7 +124,10 @@ export class ChaptersService {
     if (book.isPremium) {
       if (!userId) return { allowed: false, reason: 'Login required to read premium content' };
       const subscribed = await this.isSubscribed(userId);
-      if (!subscribed) return { allowed: false, reason: 'Active subscription required' };
+      if (subscribed) return { allowed: true };
+      // Fall through: user may have purchased the book individually
+      const owns = await this.ownsBook(userId, book.id);
+      if (!owns) return { allowed: false, reason: 'Active subscription or book purchase required' };
       return { allowed: true };
     }
 
