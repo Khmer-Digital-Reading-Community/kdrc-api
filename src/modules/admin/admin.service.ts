@@ -198,8 +198,6 @@ export class AdminService {
   }
 
   async getAnalytics() {
-    const stats = await this.getStats();
-
     const userGrowth = await this.usersRepo
       .createQueryBuilder('user')
       .select("TO_CHAR(user.createdAt, 'YYYY-MM')", 'month')
@@ -231,7 +229,6 @@ export class AdminService {
       .getRawMany();
 
     return {
-      stats,
       userGrowth,
       booksByStatus,
       exchangesByStatus,
