@@ -40,15 +40,28 @@ export class ChaptersService {
     return book.author?.id === user.id || user.role === Role.ADMIN;
   }
 
-  private async isSubscribed(userId: string): Promise<boolean> {
+  /**
+   * Check if a user has an active subscription.
+   * When `requirePaid` is true, also ensures the plan is not free (price > 0).
+   * Free-plan subscribers are NOT considered subscribed for premium content.
+   */
+  private async isSubscribed(
+    userId: string,
+    requirePaid = false,
+  ): Promise<boolean> {
     const sub = await this.subRepo.findOne({
       where: { userId, status: SubscriptionStatus.ACTIVE },
+      relations: requirePaid ? ['plan'] : [],
     });
     if (!sub) return false;
     if (new Date() > sub.endDate) {
       sub.status = SubscriptionStatus.EXPIRED;
       await this.subRepo.save(sub);
       return false;
+    }
+    if (requirePaid) {
+      const planPrice = Number((sub.plan as any)?.price ?? 0);
+      return planPrice > 0;
     }
     return true;
   }
@@ -84,6 +97,11 @@ export class ChaptersService {
   /**
    * Check access to a single chapter for a given user.
    * Returns { allowed, reason } where reason explains denial.
+   *
+   * Priority: book-level gates are authoritative — if the book is premium
+   * or paid, ALL chapters require subscription/purchase regardless of
+   * individual chapter settings. Chapter-level flags add extra restrictions
+   * but cannot override the book-level gate to grant free access.
    */
   private async checkChapterAccess(
     chapter: Chapter,
@@ -101,11 +119,36 @@ export class ChaptersService {
       return { allowed: false, reason: 'This chapter is not published yet' };
     }
 
-    // Premium chapter → requires subscription
+    // ── Book-level gate (applies to ALL chapters) ──
+
+    // Book is premium → every chapter requires a paid subscription
+    if (book.isPremium) {
+      if (!userId) return { allowed: false, reason: 'Login required to read premium content' };
+      const subscribed = await this.isSubscribed(userId, true);
+      if (subscribed) return { allowed: true };
+      // User may have purchased the book individually
+      const owns = await this.ownsBook(userId, book.id);
+      if (!owns) return { allowed: false, reason: 'Premium subscription required' };
+      return { allowed: true };
+    }
+
+    // Book is paid → every chapter requires purchase
+    if (book.isPurchasable && Number(book.price ?? 0) > 0 && !book.isFree) {
+      if (!userId) return { allowed: false, reason: 'Login required to read this book' };
+      const owns = await this.ownsBook(userId, book.id);
+      if (!owns) return { allowed: false, reason: 'Purchase required to read this book' };
+      return { allowed: true };
+    }
+
+    // ── Chapter-level gates (extra restrictions on top of free books) ──
+
+    // Premium chapter → requires paid subscription
     if (chapter.isPremium) {
       if (!userId) return { allowed: false, reason: 'Login required to read premium content' };
-      const subscribed = await this.isSubscribed(userId);
-      if (!subscribed) return { allowed: false, reason: 'Active subscription required to read premium chapters' };
+      const subscribed = await this.isSubscribed(userId, true);
+      if (subscribed) return { allowed: true };
+      const owns = await this.ownsChapter(userId, chapter.id) || await this.ownsBook(userId, book.id);
+      if (!owns) return { allowed: false, reason: 'Premium subscription required' };
       return { allowed: true };
     }
 
@@ -117,23 +160,7 @@ export class ChaptersService {
       return { allowed: true };
     }
 
-    // Book-level premium override
-    if (book.isPremium) {
-      if (!userId) return { allowed: false, reason: 'Login required to read premium content' };
-      const subscribed = await this.isSubscribed(userId);
-      if (!subscribed) return { allowed: false, reason: 'Active subscription required' };
-      return { allowed: true };
-    }
-
-    // Book-level purchase override
-    if (book.isPurchasable && Number(book.price ?? 0) > 0 && !book.isFree) {
-      if (!userId) return { allowed: false, reason: 'Login required to read this book' };
-      const owns = await this.ownsBook(userId, book.id);
-      if (!owns) return { allowed: false, reason: 'Purchase required to read this book' };
-      return { allowed: true };
-    }
-
-    // Free content — no restrictions
+    // Free content — no restrictions at book or chapter level
     return { allowed: true };
   }
 

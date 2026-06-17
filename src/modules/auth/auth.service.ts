@@ -1,21 +1,39 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
 import { BruteForceService } from './brute-force.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { AuthResponse } from './dto/auth-response.dto';
 import { LoginDto } from './dto/auth-login.dto';
 import { OAuthProfile } from './dto/oauth-profile.dto';
 import { RegisterDto } from './dto/auth-register.dto';
 import { Role } from '../../common/enums/role.enum';
+import { SubscriptionStatus } from '../../common/enums/subscription-status.enum';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly bruteForce: BruteForceService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) { }
+
+  /**
+   * Assign the Free plan to a newly registered user.
+   * Runs in the background — failures are logged but don't block registration.
+   */
+  private async assignFreePlan(userId: string): Promise<void> {
+    try {
+      await this.subscriptionsService.assignFreePlan(userId);
+      this.logger.log(`Free plan assigned to user ${userId}`);
+    } catch (err) {
+      this.logger.warn(`Could not assign free plan to user ${userId}: ${err?.message}`);
+    }
+  }
 
   async handleOAuthLogin(profile: OAuthProfile): Promise<AuthResponse> {
     if (!profile.email) {
@@ -28,6 +46,7 @@ export class AuthService {
       profile.email,
     );
 
+    let isNewUser = false;
     if (!user) {
       user = await this.usersService.create({
         email: profile.email,
@@ -35,6 +54,7 @@ export class AuthService {
         provider: profile.provider,
         providerId: profile.providerId,
       });
+      isNewUser = true;
     } else {
       user.provider = profile.provider;
       user.providerId = profile.providerId;
@@ -43,6 +63,11 @@ export class AuthService {
       }
 
       user = await this.usersService.save(user);
+    }
+
+    // Auto-assign free plan to new OAuth users
+    if (isNewUser) {
+      this.assignFreePlan(user.id);
     }
 
     const payload = {
@@ -90,6 +115,9 @@ export class AuthService {
     });
 
     await this.bruteForce.recordRegistration(ip);
+
+    // Auto-assign free plan to new users
+    this.assignFreePlan(savedUser.id);
 
     const { password, ...result } = savedUser;
     return result;

@@ -10,6 +10,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { RolesGuard } from './guards/roles.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UsersModule } from '../users/users.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UsersModule } from '../users/users.module';
       }),
     }),
     UsersModule,
+    SubscriptionsModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, BruteForceService, JwtStrategy, GoogleStrategy, RolesGuard, JwtAuthGuard],
