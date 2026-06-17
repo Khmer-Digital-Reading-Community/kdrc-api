@@ -21,7 +21,7 @@ export class SubscriptionGuard implements CanActivate {
     const hasAccess = await this.subscriptionsService.canAccessContent(userId);
     if (!hasAccess) {
       throw new ForbiddenException(
-        'This content requires an active subscription',
+        'This content requires a premium subscription',
       );
     }
 

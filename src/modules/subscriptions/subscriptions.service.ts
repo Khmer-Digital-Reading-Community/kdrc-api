@@ -51,32 +51,62 @@ export class SubscriptionsService {
 
   // ── Subscriptions ──
 
+  /**
+   * Assign the Free plan (price = 0) to a newly registered user.
+   * Skips credit deduction since the free plan costs nothing.
+   * Does nothing if the user already has an active subscription.
+   */
+  async assignFreePlan(userId: string) {
+    const existing = await this.subRepo.findOne({
+      where: { userId, status: SubscriptionStatus.ACTIVE },
+    });
+    if (existing) return existing;
+
+    const freePlan = await this.planRepo.findOne({
+      where: { isActive: true },
+      order: { price: 'ASC' },
+    });
+    if (!freePlan || Number(freePlan.price) > 0) return null;
+
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + freePlan.durationDays);
+
+    const sub = this.subRepo.create({
+      userId,
+      planId: freePlan.id,
+      startDate,
+      endDate,
+      status: SubscriptionStatus.ACTIVE,
+      autoRenew: false,
+    });
+
+    await this.subRepo.save(sub);
+    return sub;
+  }
+
   async subscribe(userId: string, planId: string, autoRenew = true) {
     const plan = await this.planRepo.findOne({ where: { id: planId } });
     if (!plan || !plan.isActive) {
       throw new NotFoundException('Plan not found or inactive');
     }
 
-    const existing = await this.subRepo.findOne({
-      where: { userId, status: SubscriptionStatus.ACTIVE },
-    });
-    if (existing) {
-      throw new BadRequestException(
-        'You already have an active subscription. Cancel it first before subscribing to a new plan.',
-      );
-    }
-
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    if (Number(user.credits) < Number(plan.price)) {
-      throw new BadRequestException(
-        `Insufficient credits. You need $${Number(plan.price).toFixed(2)} but have $${Number(user.credits).toFixed(2)}`,
-      );
+    const existing = await this.subRepo.findOne({
+      where: { userId, status: SubscriptionStatus.ACTIVE },
+      relations: ['plan'],
+    });
+    if (existing && existing.planId === planId) {
+      throw new BadRequestException('You are already subscribed to this plan.');
     }
 
-    user.credits = Number(user.credits) - Number(plan.price);
-    await this.userRepo.save(user);
+    // Cancel the old subscription when switching plans
+    if (existing) {
+      existing.status = SubscriptionStatus.CANCELLED;
+      await this.subRepo.save(existing);
+    }
 
     const startDate = new Date();
     const endDate = new Date();
@@ -95,7 +125,8 @@ export class SubscriptionsService {
 
     return {
       subscription: sub,
-      remainingCredits: Number(user.credits),
+      previousPlan: existing?.plan?.name ?? null,
+      switched: !!existing,
     };
   }
 
@@ -144,9 +175,24 @@ export class SubscriptionsService {
     return { subscribed: true, subscription: sub };
   }
 
+  /**
+   * Check if a user can access premium/paid content.
+   * Requires an active PAID subscription (plan price > 0).
+   * Free-tier subscribers do NOT have access to premium content.
+   */
   async canAccessContent(userId: string): Promise<boolean> {
-    const { subscribed } = await this.checkSubscription(userId);
-    return subscribed;
+    const sub = await this.subRepo.findOne({
+      where: { userId, status: SubscriptionStatus.ACTIVE },
+      relations: ['plan'],
+    });
+    if (!sub) return false;
+    const now = new Date();
+    if (now > sub.endDate) {
+      sub.status = SubscriptionStatus.EXPIRED;
+      await this.subRepo.save(sub);
+      return false;
+    }
+    return Number(sub.plan?.price ?? 0) > 0;
   }
 
   async toggleAutoRenew(userId: string) {
